@@ -14,6 +14,7 @@ interface EvidenceItemProps {
   fileType?: string
   size?: string
   delay?: number
+  onClick?: () => void
 }
 
 export function EvidenceItem({
@@ -26,6 +27,7 @@ export function EvidenceItem({
   fileType,
   size,
   delay = 0,
+  onClick,
 }: EvidenceItemProps) {
   if (type === "image") {
     return (
@@ -35,6 +37,7 @@ export function EvidenceItem({
         viewport={{ once: true }}
         transition={{ delay }}
         whileHover={{ y: -4 }}
+        onClick={onClick}
         className="group relative aspect-square rounded-2xl overflow-hidden glass-card border-2 border-transparent hover:border-primary/50 transition-all cursor-pointer"
       >
         <img
@@ -58,6 +61,7 @@ export function EvidenceItem({
       viewport={{ once: true }}
       transition={{ delay }}
       whileHover={{ y: -4 }}
+      onClick={onClick}
       className={cn(
         "group aspect-square rounded-2xl glass-card flex flex-col items-center justify-center gap-3 md:gap-4 hover:bg-white/10 transition-colors cursor-pointer border-2 border-transparent"
       )}
