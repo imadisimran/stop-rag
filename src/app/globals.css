@@ -1,26 +1,379 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
+/* 
+  🔮 Tailwind v4 CSS-First Configuration
+  The @theme block replaces your tailwind.config.ts file.
+*/
+@theme {
+  /* ========================================
+     🎨 Colors (Maps to bg-primary, text-foreground, etc.)
+     ======================================== */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  /* ========================================
+     📏 Border Radius
+     ======================================== */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+
+  /* ========================================
+     🔤 Typography
+     ======================================== */
+  --font-display: var(--font-display), sans-serif;
+  --font-body: var(--font-body), sans-serif;
+  --font-mono: var(--font-mono), monospace;
+
+  /* ========================================
+     ✨ Animations
+     ======================================== */
+  --animate-float-slow: float-slow 20s ease-in-out infinite;
+
+  @keyframes float-slow {
+
+    0%,
+    100% {
+      transform: translate(0, 0);
+    }
+
+    50% {
+      transform: translate(30px, -20px);
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* 
+  ♿ Force class-based dark mode. 
+  Tailwind v4 supports this out of the box, but this ensures it strictly triggers on the .dark class.
+*/
+@custom-variant dark (&:is(.dark *));
+
+@layer base {
+  :root {
+    /* 
+      Fearless Dark Theme 
+      Base Background: #0f0f1a (Deep Space) -> HSL: 240 33% 7%
+      Base Surface: #131318 -> HSL: 240 10% 8%
+    */
+    --background: 240 33% 7%;
+    --foreground: 0 0% 100%;
+    /* Pure White */
+
+    --card: 240 10% 8%;
+    --card-foreground: 260 10% 90%;
+    /* #e4e1e9 */
+
+    --popover: 240 10% 8%;
+    --popover-foreground: 260 10% 90%;
+
+    /* Electric Purple #8b5cf6 -> HSL: 258 90% 66% */
+    --primary: 258 90% 66%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Cyan Glow #06b6d4 -> HSL: 187 95% 42% */
+    --secondary: 187 95% 42%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 258 10% 15%;
+    --muted-foreground: 254 80% 76%;
+    /* Soft Lavender #a78bfa */
+
+    /* Amber/Orange #ffb869 -> HSL: 32 100% 71% */
+    --accent: 32 100% 71%;
+    --accent-foreground: 240 33% 7%;
+
+    /* Neon Red #f43f5e -> HSL: 350 89% 60% */
+    --destructive: 350 89% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 15%;
+    /* Subtle dark border for default shadcn states */
+    --input: 0 0% 15%;
+    --ring: 258 90% 66%;
+
+    --radius: 0.75rem;
+
+    /* Fearless Custom Design Tokens */
+    --success: 160 84% 39%;
+    /* Neon Green #10b981 */
+    --success-foreground: 0 0% 100%;
+
+    --glow-purple: 258 90% 66% / 0.25;
+    --glow-cyan: 187 95% 42% / 0.25;
+
+    /* Typography Tokens */
+    --font-display: 'Space Grotesk', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply antialiased bg-background text-foreground;
+    font-family: var(--font-body);
+  }
+
+  /* Global Focus States for Accessibility */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  html {
+    @apply font-sans;
+  }
+}
+
+@layer components {
+  /* ========================================
+     🔮 Glassmorphism Component System
+     ======================================== */
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 20px;
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.10);
+    @apply transition-all duration-300 ease-out;
+  }
+
+  .glass-card:hover {
+    transform: translateY(-4px);
+    box-shadow:
+      0 12px 40px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  }
+
+  .glass-elevated {
+    background: rgba(139, 92, 246, 0.08);
+    backdrop-filter: blur(30px) saturate(200%);
+    -webkit-backdrop-filter: blur(30px) saturate(200%);
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    border-radius: 24px;
+    box-shadow:
+      0 8px 40px rgba(139, 92, 246, 0.15),
+      0 0 80px rgba(6, 182, 212, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    @apply transition-all duration-300 ease-out;
+  }
+
+  .glass-navbar {
+    background: rgba(10, 10, 15, 0.80);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .glass-input {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 12px;
+    /* Changed duration-250 to duration-[250ms] for v4 compatibility */
+    @apply transition-all duration-[250ms] ease-out;
+  }
+
+  .glass-input:focus {
+    border-color: rgba(139, 92, 246, 0.60);
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  /* ========================================
+     ✨ Signature Glow Background System
+     ======================================== */
+
+  .glow-orb-purple {
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, hsl(var(--glow-purple)) 0%, transparent 70%);
+    border-radius: 9999px;
+    filter: blur(80px);
+    opacity: 0.6;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .glow-orb-cyan {
+    position: absolute;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, hsl(var(--glow-cyan)) 0%, transparent 70%);
+    border-radius: 9999px;
+    filter: blur(80px);
+    opacity: 0.5;
+    pointer-events: none;
+    z-index: 0;
+  }
+}
+
+@layer utilities {
+
+  /* Gradient Text Utility */
+  .text-gradient {
+    background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Custom Shadow Glows */
+  .shadow-glow-purple {
+    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.40);
+  }
+
+  .shadow-glow-cyan {
+    box-shadow: 0 4px 20px rgba(6, 182, 212, 0.40);
+  }
+}
+
+/* ♿ Accessibility: Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  ::before,
+  ::after {
+    animation-delay: -1ms !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    background-attachment: initial !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0ms !important;
+  }
+
+  .glass-card:hover,
+  .glass-elevated:hover {
+    transform: none;
+  }
+}
+
+/* 
+  ---break---
+*/
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* 
+  ---break---
+*/
+:root {
+  --background: hsl(240 33% 7%);
+  --foreground: hsl(0 0% 100%);
+  --card: hsl(240 10% 8%);
+  --card-foreground: hsl(260 10% 90%);
+  --popover: hsl(240 10% 8%);
+  --popover-foreground: hsl(260 10% 90%);
+  --primary: hsl(258 90% 66%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(187 95% 42%);
+  --secondary-foreground: hsl(0 0% 100%);
+  --muted: hsl(258 10% 15%);
+  --muted-foreground: hsl(254 80% 76%);
+  --accent: hsl(32 100% 71%);
+  --accent-foreground: hsl(240 33% 7%);
+  --destructive: hsl(350 89% 60%);
+  --destructive-foreground: hsl(0 0% 100%);
+  --border: hsl(0 0% 15%);
+  --input: hsl(0 0% 15%);
+  --ring: hsl(258 90% 66%);
+  --success: hsl(160 84% 39%);
+  --success-foreground: hsl(0 0% 100%);
+  --radius: 0.75rem;
+}
+
+/* 
+  ---break---
+*/
+.dark {
+  --background: hsl(240 33% 7%);
+  --foreground: hsl(0 0% 100%);
+  --card: hsl(240 10% 8%);
+  --card-foreground: hsl(260 10% 90%);
+  --popover: hsl(240 10% 8%);
+  --popover-foreground: hsl(260 10% 90%);
+  --primary: hsl(258 90% 66%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(187 95% 42%);
+  --secondary-foreground: hsl(0 0% 100%);
+  --muted: hsl(258 10% 15%);
+  --muted-foreground: hsl(254 80% 76%);
+  --accent: hsl(32 100% 71%);
+  --accent-foreground: hsl(240 33% 7%);
+  --destructive: hsl(350 89% 60%);
+  --destructive-foreground: hsl(0 0% 100%);
+  --border: hsl(0 0% 15%);
+  --input: hsl(0 0% 15%);
+  --ring: hsl(258 90% 66%);
+  --success: hsl(160 84% 39%);
+  --success-foreground: hsl(0 0% 100%);
+  --radius: 0.75rem;
 }
