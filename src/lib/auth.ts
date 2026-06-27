@@ -1,7 +1,7 @@
-import { signInUser } from "@/actions/auth/signIn"
+import { signInUser, socialLogin } from "@/actions/auth/signIn"
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
-import GoogleProvider from "next-auth/providers/google"
+import GoogleProvider, { GoogleProfile } from "next-auth/providers/google"
 export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   providers: [
@@ -33,19 +33,35 @@ export const authOptions: NextAuthOptions = {
           provider: response.data?.provider as string,
           isVerified: response.data?.isVerified as boolean,
           userId: response.data?.userId as string,
-          isProfileComplete:response.data?.isProfileComplete,
+          isProfileComplete: response.data?.isProfileComplete,
         }
       },
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async signIn({ user, account, profile, email, credentials }) {
+      return true
+    },
+    async jwt({ token, user, account, profile }) {
       if (user) {
-        token.role = user.role
-        token.provider = user.provider
-        token.isVerified = user.isVerified
-        token.userId = user.userId
-        token.isProfileComplete = user.isProfileComplete
+        if (account?.provider === "credentials") {
+          token.role = user.role
+          token.provider = user.provider
+          token.isVerified = user.isVerified
+          token.userId = user.userId
+          token.isProfileComplete = user.isProfileComplete
+        }
+        if (account?.provider === "google") {
+          const googleProfile = profile as GoogleProfile
+          const res = await socialLogin({ email: user?.email || "", name: user?.name || "", provider: account?.provider || "", isVerified: googleProfile.email_verified || false })
+          if (res.success) {
+            token.role = res.data?.role
+            token.provider = res.data?.provider
+            token.isVerified = res.data?.isVerified
+            token.userId = res.data?.userId
+            token.isProfileComplete = res.data?.isProfileComplete
+          }
+        }
       }
       return token
     },
