@@ -5,6 +5,7 @@ import { FiShield, FiPlusCircle, FiLock, FiFileText, FiHome } from "react-icons/
 import { TbGavel, TbBuildingBank } from "react-icons/tb"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import Link from "next/link"
 
 const navItems = [
   { icon: FiHome, label: "Home Feed", href: "#", active: true },
@@ -42,14 +43,17 @@ export function Sidebar() {
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.3 }}
-        className="px-6 mb-6"
+        className="px-3 mb-6"
       >
         <Button
           variant="gradient"
           className="w-full font-bold gap-2"
+          asChild
         >
-          <FiPlusCircle className="text-lg" />
-          Report Incident
+          <Link href="/report">
+            <FiPlusCircle className="text-lg" />
+            Report Incident
+          </Link>
         </Button>
       </motion.div>
 

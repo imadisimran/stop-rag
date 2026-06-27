@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { motion } from "framer-motion"
 import { toast } from "sonner"
-import { FiSend, FiLoader, FiCheckCircle, FiLock } from "react-icons/fi"
+import { FiSend, FiLoader, FiCheckCircle, FiLock, FiCalendar, FiClock, FiChevronDown } from "react-icons/fi"
 import { GlassPanel } from "@/components/ui/glass-panel"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -17,6 +17,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { EvidenceUpload, type UploadedFile } from "./evidence-upload"
+import { format } from "date-fns"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
 
 const universities = [
   { value: "mit", label: "Institute of Advanced Technology" },
@@ -56,6 +59,30 @@ export function ReportForm() {
   const [files, setFiles] = useState<UploadedFile[]>([])
   const [status, setStatus] = useState<Status>("idle")
   const [ghostId, setGhostId] = useState<string>("")
+  const [date, setDate] = useState<Date | undefined>(undefined)
+  const [hour, setHour] = useState<string>("12")
+  const [minute, setMinute] = useState<string>("00")
+  const [period, setPeriod] = useState<"AM" | "PM">("PM")
+  const [openDatePicker, setOpenDatePicker] = useState(false)
+
+  // Combine date, hour, minute, and period into a single 24-hour formatted ISO value for form submission
+  const getCombinedDateTime = () => {
+    if (!date) return ""
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+
+    // Convert 12h to 24h format
+    let h = parseInt(hour, 10)
+    if (period === "PM" && h !== 12) {
+      h += 12
+    } else if (period === "AM" && h === 12) {
+      h = 0
+    }
+    const hh = String(h).padStart(2, '0')
+
+    return `${year}-${month}-${day}T${hh}:${minute}`
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -92,6 +119,10 @@ export function ReportForm() {
     setStatus("idle")
     setGhostId("")
     setFiles([])
+    setDate(undefined)
+    setHour("12")
+    setMinute("00")
+    setPeriod("PM")
   }
 
   return (
@@ -124,13 +155,91 @@ export function ReportForm() {
 
           {/* Incident Time + Harassment Type */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <Field label="Incident Time" htmlFor="incident-time">
-              <Input
-                id="incident-time"
-                type="datetime-local"
-                className="h-11 rounded-xl border-white/10 bg-white/[0.04] backdrop-blur-md"
-              />
-            </Field>
+            <div className="flex flex-col gap-2">
+              <span className="text-xs font-bold uppercase tracking-[0.12em] text-secondary">
+                Incident Date & Time
+              </span>
+              <Popover open={openDatePicker} onOpenChange={setOpenDatePicker}>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex h-11 w-full items-center justify-between rounded-xl border border-white/10 bg-white/[0.04] backdrop-blur-md px-4 py-2 text-sm text-foreground focus:outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/20 focus:bg-white/[0.06] hover:bg-white/[0.08] hover:text-foreground font-normal transition-all"
+                  >
+                    <span className="flex items-center gap-2 truncate">
+                      <FiCalendar className="text-muted-foreground shrink-0 size-4" />
+                      {date ? `${format(date, "PPP")} at ${hour}:${minute} ${period}` : "Select date & time"}
+                    </span>
+                    <FiChevronDown className="h-4 w-4 opacity-60 shrink-0 text-muted-foreground" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 border border-white/10 bg-popover/95 backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden" align="start">
+                  <div className="flex flex-col">
+                    <Calendar
+                      mode="single"
+                      selected={date}
+                      onSelect={(date) => {
+                        setDate(date)
+                      }}
+                    />
+                    <div className="flex items-center justify-between border-t border-white/10 p-3 bg-white/[0.02]">
+                      <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5 select-none">
+                        <FiClock className="size-3.5 text-secondary" /> Time
+                      </span>
+                      <div className="flex items-center gap-1">
+                        {/* Hour Select */}
+                        <Select value={hour} onValueChange={setHour}>
+                          <SelectTrigger className="h-8 w-[58px] rounded-lg px-1.5 text-xs border-white/10 bg-white/[0.02] focus:bg-white/[0.06]">
+                            <SelectValue placeholder="HH" />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-48 min-w-[58px]">
+                            {Array.from({ length: 12 }).map((_, i) => {
+                              const h = String(i + 1).padStart(2, "0")
+                              return (
+                                <SelectItem key={h} value={h} className="text-xs py-1 pl-6 pr-2">
+                                  {h}
+                                </SelectItem>
+                              )
+                            })}
+                          </SelectContent>
+                        </Select>
+
+                        <span className="text-muted-foreground text-xs select-none">:</span>
+
+                        {/* Minute Select */}
+                        <Select value={minute} onValueChange={setMinute}>
+                          <SelectTrigger className="h-8 w-[58px] rounded-lg px-1.5 text-xs border-white/10 bg-white/[0.02] focus:bg-white/[0.06]">
+                            <SelectValue placeholder="MM" />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-48 min-w-[58px]">
+                            {Array.from({ length: 60 }).map((_, i) => {
+                              const m = String(i).padStart(2, "0")
+                              return (
+                                <SelectItem key={m} value={m} className="text-xs py-1 pl-6 pr-2">
+                                  {m}
+                                </SelectItem>
+                              )
+                            })}
+                          </SelectContent>
+                        </Select>
+
+                        {/* Period Select */}
+                        <Select value={period} onValueChange={(val: "AM" | "PM") => setPeriod(val)}>
+                          <SelectTrigger className="h-8 w-[58px] rounded-lg px-1.5 text-xs border-white/10 bg-white/[0.02] focus:bg-white/[0.06]">
+                            <SelectValue placeholder="AM/PM" />
+                          </SelectTrigger>
+                          <SelectContent className="min-w-[58px]">
+                            <SelectItem value="AM" className="text-xs py-1 pl-6 pr-2">AM</SelectItem>
+                            <SelectItem value="PM" className="text-xs py-1 pl-6 pr-2">PM</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+              <input type="hidden" name="incident-time" id="incident-time" value={getCombinedDateTime()} />
+            </div>
             <Field label="Harassment Type" htmlFor="harassment-type">
               <Select>
                 <SelectTrigger id="harassment-type">
@@ -149,31 +258,39 @@ export function ReportForm() {
 
           {/* Location (Category + Specific) */}
           <Field label="Location Details">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <Select>
-                <SelectTrigger className="md:col-span-1">
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {locationCategories.map((c) => (
-                    <SelectItem key={c.value} value={c.value}>
-                      {c.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select>
-                <SelectTrigger className="md:col-span-2">
-                  <SelectValue placeholder="Select specific location" />
-                </SelectTrigger>
-                <SelectContent>
-                  {specificLocations.map((l) => (
-                    <SelectItem key={l.value} value={l.value}>
-                      {l.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="flex flex-col sm:flex-row items-stretch rounded-xl border border-white/10 bg-white/[0.04] backdrop-blur-md overflow-hidden focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20 focus-within:bg-white/[0.06] transition-all duration-200">
+              <div className="flex-1 min-w-0 sm:flex-[2_2_0%]">
+                <Select>
+                  <SelectTrigger className="border-0 bg-transparent backdrop-blur-none rounded-none shadow-none focus:ring-0 focus:ring-transparent focus:bg-transparent focus:border-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:outline-none h-11 w-full">
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {locationCategories.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>
+                        {c.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Divider */}
+              <div className="w-full h-px sm:w-px sm:h-auto bg-white/10 self-stretch shrink-0" />
+
+              <div className="flex-1 min-w-0 sm:flex-[3_3_0%]">
+                <Select>
+                  <SelectTrigger className="border-0 bg-transparent backdrop-blur-none rounded-none shadow-none focus:ring-0 focus:ring-transparent focus:bg-transparent focus:border-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:outline-none h-11 w-full">
+                    <SelectValue placeholder="Select specific location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {specificLocations.map((l) => (
+                      <SelectItem key={l.value} value={l.value}>
+                        {l.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </Field>
 

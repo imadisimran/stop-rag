@@ -9,6 +9,8 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
     }),
+
+    //This is only for credentials. It returns data inside user object but it only do when dealing with credentials. Otherwise while dealing with google or any other OAuth it is totally useless.
     CredentialsProvider({
       name: "Credentials",
       credentials: {
