@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { GoogleButton } from "@/components/auth/google-button"
 import { AuthDivider } from "@/components/auth/auth-divider"
+import { signIn } from "next-auth/react"
+import { registerUser } from "@/actions/auth/register"
 
 // Stagger container
 const containerVariants = {
@@ -115,16 +117,34 @@ export function RegisterForm() {
 
     setIsLoading(true)
     try {
-      // TODO: replace with actual API call
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      // Create user via register endpoint
+      const response = await registerUser({ name, email, password })
+
+      if (!response.success) {
+        throw new Error(response.message || "Registration failed")
+      }
 
       toast.success("Account created!", {
-        description: "Your student account has been registered successfully.",
+        description: "Your student account has been registered successfully. Logging in...",
       })
-      router.push("/login")
-    } catch {
+
+      // Automatically sign the user in after registration
+      const signinRes = await signIn("credentials", {
+        redirect: false,
+        email,
+        password,
+      })
+
+      if (signinRes?.error) {
+        // If auto-signin fails for some reason, direct to login page
+        router.push("/login")
+      } else {
+        router.push("/")
+        router.refresh()
+      }
+    } catch (err: any) {
       toast.error("Registration failed", {
-        description: "Something went wrong. Please try again.",
+        description: err.message || "Something went wrong. Please try again.",
       })
     } finally {
       setIsLoading(false)

@@ -3,11 +3,11 @@
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { FcGoogle } from "react-icons/fc"
+import { signIn } from "next-auth/react"
 
 export function GoogleButton() {
   const handleGoogleSignIn = () => {
-    // TODO: integrate Google OAuth
-    console.log("Google sign-in clicked")
+    signIn("google",{callbackUrl:"/"})
   }
 
   return (

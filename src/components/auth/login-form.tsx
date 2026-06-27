@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { GoogleButton } from "@/components/auth/google-button"
 import { AuthDivider } from "@/components/auth/auth-divider"
+import { signIn } from "next-auth/react"
 
 // Stagger container for child elements
 const containerVariants = {
@@ -99,16 +100,26 @@ export function LoginForm() {
 
     setIsLoading(true)
     try {
-      // TODO: replace with actual API call
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-
-      toast.success("Welcome back!", {
-        description: "You have been logged in successfully.",
+      const res = await signIn("credentials", {
+        redirect: false,
+        email,
+        password,
       })
-      router.push("/")
-    } catch {
+
+      if (res?.error) {
+        toast.error("Login failed", {
+          description: "Invalid email or password. Please try again.",
+        })
+      } else {
+        toast.success("Welcome back!", {
+          description: "You have been logged in successfully.",
+        })
+        router.push("/")
+        router.refresh()
+      }
+    } catch (err) {
       toast.error("Login failed", {
-        description: "Invalid email or password. Please try again.",
+        description: "An unexpected error occurred. Please try again.",
       })
     } finally {
       setIsLoading(false)

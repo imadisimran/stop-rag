@@ -19,3 +19,6 @@ Always use counter shadcn components rather than building raw components from sc
 Don't write all code one file or make a huge unmanagable component. Instead of use small components where it needs. If making component makes things more complex then you can create big components. If it is best to use components to make something then make components.
 
 use proper animation, transitions and scroll effects for make the website more interactive and good looking. For animation you can use framer motion or gsap.
+
+
+For Authentication use next-auth with typescript.
