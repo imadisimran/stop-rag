@@ -4,7 +4,7 @@ import { dbConnect } from "@/lib/dbConnect";
 import { encryptData, generateBlindIndex } from "@/lib/encryption";
 import { ServerReturn, User } from "@/lib/types";
 import bcrypt from "bcryptjs";
-import { nanoid } from 'nanoid';
+import { generateUniqueId } from "@/lib/utils";
 
 interface RegisterData {
     name: string;
@@ -35,7 +35,7 @@ export const registerUser = async (data: RegisterData): Promise<ServerReturn> =>
             emailHash,
             createdAt: new Date(),
             role: "STUDENT",
-            userId: nanoid(10),
+            userId: generateUniqueId(),
             provider: "credentials",
             isVerified: false,
             studentDetails: null,

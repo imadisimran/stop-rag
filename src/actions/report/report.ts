@@ -1,36 +1,46 @@
 "use server"
 
+import { authOptions } from "@/lib/auth"
 import { dbConnect } from "@/lib/dbConnect"
-import { IncidentPayload } from "@/lib/reportTypes"
+import { IncidentPayload, Report } from "@/lib/reportTypes"
 import {ServerReturn } from "@/lib/types"
-import { nanoid } from "nanoid"
+import { getServerSession } from "next-auth"
+import { generateUniqueId } from "@/lib/utils"
 
 export const postReport = async (
     payload: IncidentPayload
 ): Promise<ServerReturn<{ postId: string }>> => {
+    const session=await getServerSession(authOptions)
+
+    if(!session){
+        return {success:false,message:"User must login for posting report"}
+    }
     const { university, location, incidentType, description, date } = payload
 
-    if (!university.trim() || !location.type.trim() || !location.name.trim() || !location.id.trim() || !incidentType.trim() || !description.trim() || !date) {
+    if (!university.trim() || !location.trim() || !incidentType.trim() || !description.trim() || !date) {
         return { success: false, message: "All fields are required" }
     }
 
-    console.log(payload)
+    // console.log(payload)
 
     try {
-        const postId = nanoid(10)
+        const postId = generateUniqueId(14)
+        const [locType, locId, locName] = location.split(":")
 
         const newReport:Report={
             postId,
             university,
             location:{
-                type:location.type,
-                id:location.id,
-                name:location.name,
+                type:locType || "",
+                id:locId || "",
+                name:locName || "",
             },
             incidentType,
             description,
             date,
-            proofUrl:
+            proofUrl:null,
+            createdAt:new Date(),
+            status:"PENDING",
         }
 
         const collection = await dbConnect("incidents")
@@ -38,7 +48,11 @@ export const postReport = async (
         const result = await collection.insertOne({
             postId,
             university,
-            location,
+            location: {
+                type: locType || "",
+                id: locId || "",
+                name: locName || "",
+            },
             incidentType,
             description,
             proofUrls: [],

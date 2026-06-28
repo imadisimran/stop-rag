@@ -1,12 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { toast } from "sonner"
 import { FiSend, FiLoader, FiCheckCircle, FiLock, FiCalendar, FiClock, FiChevronDown } from "react-icons/fi"
 import { GlassPanel } from "@/components/ui/glass-panel"
 import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import {
@@ -21,12 +20,9 @@ import { format } from "date-fns"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { postReport } from "@/actions/report/report"
+import { getUniversities, getLocations, type Location } from "@/actions/universityInfo/university"
 
-const universities = [
-  { value: "mit", label: "Institute of Advanced Technology" },
-  { value: "national", label: "National Research Academy" },
-  { value: "global", label: "Global University of Sciences" },
-]
+
 
 const harassmentTypes = [
   { value: "verbal", label: "Verbal Abuse" },
@@ -35,20 +31,7 @@ const harassmentTypes = [
   { value: "social", label: "Social Exclusion" },
 ]
 
-const locationCategories = [
-  { value: "hall", label: "Hall" },
-  { value: "hostel", label: "Hostel" },
-  { value: "department", label: "Department" },
-  { value: "institute", label: "Institute" },
-]
 
-const specificLocations = [
-  { value: "block_a", label: "Block A" },
-  { value: "block_b", label: "Block B" },
-  { value: "room_302", label: "Room 302" },
-  { value: "cafeteria", label: "Main Cafeteria" },
-  { value: "library", label: "Central Library" },
-]
 
 type Status = "idle" | "submitting" | "success"
 
@@ -57,15 +40,6 @@ function generateGhostId() {
 }
 
 export function ReportForm() {
-  const [files, setFiles] = useState<UploadedFile[]>([])
-  const [status, setStatus] = useState<Status>("idle")
-  const [ghostId, setGhostId] = useState<string>("")
-  const [date, setDate] = useState<Date | undefined>(undefined)
-  const [hour, setHour] = useState<string>("12")
-  const [minute, setMinute] = useState<string>("00")
-  const [period, setPeriod] = useState<"AM" | "PM">("PM")
-  const [openDatePicker, setOpenDatePicker] = useState(false)
-
   // Form input states
   const [university, setUniversity] = useState<string>("")
   const [incidentType, setIncidentType] = useState<string>("")
@@ -81,6 +55,59 @@ export function ReportForm() {
     description?: string;
     date?: string;
   }>({})
+
+  const [files, setFiles] = useState<UploadedFile[]>([])
+  const [status, setStatus] = useState<Status>("idle")
+  const [ghostId, setGhostId] = useState<string>("")
+  const [date, setDate] = useState<Date | undefined>(undefined)
+  const [hour, setHour] = useState<string>("12")
+  const [minute, setMinute] = useState<string>("00")
+  const [period, setPeriod] = useState<"AM" | "PM">("PM")
+  const [openDatePicker, setOpenDatePicker] = useState(false)
+  const [universitiesList, setUniversitiesList] = useState<{ id: string; name: string }[]>([])
+  const [locationsList, setLocationsList] = useState<Location[]>([])
+  const [categoryList, setCategoryList] = useState<{ value: string; label: string }[]>([])
+
+  useEffect(() => {
+    const fetchUniversities = async () => {
+      const res = await getUniversities()
+      if (res.success && res.data) {
+        setUniversitiesList(res.data)
+      } else {
+        const errorMsg = typeof res.error === "string" ? res.error : res.error?.message || "Failed to load universities"
+        toast.error(errorMsg)
+      }
+    }
+    fetchUniversities()
+  }, [])
+
+  useEffect(() => {
+    if (!university) {
+      setLocationsList([])
+      setCategoryList([])
+      setCategory("")
+      setSpecificLocation("")
+      return
+    }
+
+    const fetchLocations = async () => {
+      const uniId = university.split(":")[0]
+      const res = await getLocations(uniId)
+      if (res.success && res.data) {
+        setLocationsList(res.data)
+        const uniqueTypes = Array.from(new Set(res.data.map((loc) => loc.type)))
+        const cats = uniqueTypes.map((type) => ({
+          value: type,
+          label: type.charAt(0) + type.slice(1).toLowerCase(),
+        }))
+        setCategoryList(cats)
+      } else {
+        const errorMsg = typeof res.error === "string" ? res.error : res.error?.message || "Failed to load locations"
+        toast.error(errorMsg)
+      }
+    }
+    fetchLocations()
+  }, [university])
 
   // Handlers to clear errors on value change
   const handleUniversityChange = (val: string) => {
@@ -99,7 +126,8 @@ export function ReportForm() {
 
   const handleCategoryChange = (val: string) => {
     setCategory(val)
-    if (errors.location && specificLocation) {
+    setSpecificLocation("")
+    if (errors.location) {
       setErrors((prev) => ({ ...prev, location: undefined }))
     }
   }
@@ -167,15 +195,9 @@ export function ReportForm() {
     setStatus("submitting")
 
     try {
-      const specificItem = specificLocations.find((l) => l.value === specificLocation)
-
       const payload = {
         university,
-        location: {
-          type: category,
-          id: specificLocation,
-          name: specificItem ? specificItem.label : specificLocation,
-        },
+        location: specificLocation,
         incidentType,
         description,
         proofUrls: [],
@@ -251,9 +273,9 @@ export function ReportForm() {
                 <SelectValue placeholder="Select your institution" />
               </SelectTrigger>
               <SelectContent>
-                {universities.map((u) => (
-                  <SelectItem key={u.value} value={u.value}>
-                    {u.label}
+                {universitiesList.map((u) => (
+                  <SelectItem key={u.id} value={`${u.id}:${u.name}`}>
+                    {u.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -379,12 +401,12 @@ export function ReportForm() {
           <Field label="Location Details">
             <div className="flex flex-col sm:flex-row items-stretch rounded-xl border border-white/10 bg-white/[0.04] backdrop-blur-md overflow-hidden focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20 focus-within:bg-white/[0.06] transition-all duration-200">
               <div className="flex-1 min-w-0 sm:flex-[2_2_0%]">
-                <Select value={category} onValueChange={handleCategoryChange}>
+                <Select value={category} onValueChange={handleCategoryChange} disabled={!university}>
                   <SelectTrigger className="border-0 bg-transparent backdrop-blur-none rounded-none shadow-none focus:ring-0 focus:ring-transparent focus:bg-transparent focus:border-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:outline-none h-11 w-full">
-                    <SelectValue placeholder="Category" />
+                    <SelectValue placeholder={university ? "Category" : "Select university first"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {locationCategories.map((c) => (
+                    {categoryList.map((c) => (
                       <SelectItem key={c.value} value={c.value}>
                         {c.label}
                       </SelectItem>
@@ -397,16 +419,18 @@ export function ReportForm() {
               <div className="w-full h-px sm:w-px sm:h-auto bg-white/10 self-stretch shrink-0" />
 
               <div className="flex-1 min-w-0 sm:flex-[3_3_0%]">
-                <Select value={specificLocation} onValueChange={handleSpecificLocationChange}>
+                <Select value={specificLocation} onValueChange={handleSpecificLocationChange} disabled={!university || !category}>
                   <SelectTrigger className="border-0 bg-transparent backdrop-blur-none rounded-none shadow-none focus:ring-0 focus:ring-transparent focus:bg-transparent focus:border-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:outline-none h-11 w-full">
-                    <SelectValue placeholder="Select specific location" />
+                    <SelectValue placeholder={!university ? "Select university first" : !category ? "Select category first" : "Select specific location"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {specificLocations.map((l) => (
-                      <SelectItem key={l.value} value={l.value}>
-                        {l.label}
-                      </SelectItem>
-                    ))}
+                    {locationsList
+                      .filter((l) => l.type === category)
+                      .map((l) => (
+                        <SelectItem key={l.id} value={`${l.type}:${l.id}:${l.name}`}>
+                          {l.name}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>

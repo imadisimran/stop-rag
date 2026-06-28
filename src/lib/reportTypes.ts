@@ -1,6 +1,6 @@
 export interface IncidentPayload{
   university: string;
-  location:{type:string,id:string,name:string};
+  location: string;
   incidentType:string;
   description:string;
   proofUrls:string[];
@@ -14,7 +14,7 @@ export interface Report{
     incidentType: string;
     description: string;
     date: Date;
-    proofUrl: { secureUrl: string }[];
+    proofUrl: { secureUrl: string }[] | null;
     createdAt: Date;
     status: "PENDING" | "PROCESSING" | "SUBMITTED" | "REJECTED";
 }

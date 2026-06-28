@@ -15,7 +15,7 @@ const clientPromise: Promise<MongoClient> =
     : client.connect();
 
 
-type Collections = "users" | "incidents";
+type Collections = "users" | "incidents" | "universities";
 export async function dbConnect<T extends Document>(
   collectionName: Collections
 ): Promise<Collection<T>> {

@@ -1,6 +1,7 @@
 export interface ServerReturn<T = null> {
   success: boolean;
-  message: string;
+  message?: string;
+  error?: Error | string;
   data?: T;
 }
 

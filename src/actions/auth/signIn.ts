@@ -4,7 +4,7 @@ import { dbConnect } from "@/lib/dbConnect";
 import { encryptData, generateBlindIndex } from "@/lib/encryption";
 import { ServerReturn, SessionData, User } from "@/lib/types";
 import bcrypt from "bcryptjs";
-import { nanoid } from "nanoid";
+import { generateUniqueId } from "@/lib/utils";
 
 interface SignInData {
     email: string;
@@ -91,7 +91,7 @@ export const socialLogin = async (data: SocialLoginData): Promise<ServerReturn<S
             emailHash: generateBlindIndex(email),
             createdAt: new Date(),
             role: "STUDENT",
-            userId: nanoid(10),
+            userId: generateUniqueId(),
             provider,
             isVerified,
             isProfileComplete: false,
