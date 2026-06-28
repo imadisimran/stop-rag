@@ -1,13 +1,18 @@
 "use client"
 
 import { motion } from "framer-motion"
+import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { FcGoogle } from "react-icons/fc"
 import { signIn } from "next-auth/react"
 
 export function GoogleButton() {
+  const searchParams = useSearchParams()
+  // Honour the page the originally requested (set by the proxy), otherwise home.
+  const callbackUrl = searchParams.get("callbackUrl") || "/"
+
   const handleGoogleSignIn = () => {
-    signIn("google",{callbackUrl:"/"})
+    signIn("google", { callbackUrl })
   }
 
   return (

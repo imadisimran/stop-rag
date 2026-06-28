@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -72,6 +72,10 @@ const buttonVariants = {
 
 export function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  // The page the user originally requested before being bounced to login.
+  // Set by the proxy; fall back to home if there wasn't one.
+  const callbackUrl = searchParams.get("callbackUrl") || "/"
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -114,7 +118,7 @@ export function LoginForm() {
         toast.success("Welcome back!", {
           description: "You have been logged in successfully.",
         })
-        router.push("/")
+        router.push(callbackUrl)
         router.refresh()
       }
     } catch (err) {

@@ -20,6 +20,7 @@ import { EvidenceUpload, type UploadedFile } from "./evidence-upload"
 import { format } from "date-fns"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
+import { postReport } from "@/actions/report/report"
 
 const universities = [
   { value: "mit", label: "Institute of Advanced Technology" },
@@ -65,6 +66,58 @@ export function ReportForm() {
   const [period, setPeriod] = useState<"AM" | "PM">("PM")
   const [openDatePicker, setOpenDatePicker] = useState(false)
 
+  // Form input states
+  const [university, setUniversity] = useState<string>("")
+  const [incidentType, setIncidentType] = useState<string>("")
+  const [category, setCategory] = useState<string>("")
+  const [specificLocation, setSpecificLocation] = useState<string>("")
+  const [description, setDescription] = useState<string>("")
+
+  // Form error state
+  const [errors, setErrors] = useState<{
+    university?: string;
+    incidentType?: string;
+    location?: string;
+    description?: string;
+    date?: string;
+  }>({})
+
+  // Handlers to clear errors on value change
+  const handleUniversityChange = (val: string) => {
+    setUniversity(val)
+    if (errors.university) {
+      setErrors((prev) => ({ ...prev, university: undefined }))
+    }
+  }
+
+  const handleIncidentTypeChange = (val: string) => {
+    setIncidentType(val)
+    if (errors.incidentType) {
+      setErrors((prev) => ({ ...prev, incidentType: undefined }))
+    }
+  }
+
+  const handleCategoryChange = (val: string) => {
+    setCategory(val)
+    if (errors.location && specificLocation) {
+      setErrors((prev) => ({ ...prev, location: undefined }))
+    }
+  }
+
+  const handleSpecificLocationChange = (val: string) => {
+    setSpecificLocation(val)
+    if (errors.location && category) {
+      setErrors((prev) => ({ ...prev, location: undefined }))
+    }
+  }
+
+  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setDescription(e.target.value)
+    if (errors.description) {
+      setErrors((prev) => ({ ...prev, description: undefined }))
+    }
+  }
+
   // Combine date, hour, minute, and period into a single 24-hour formatted ISO value for form submission
   const getCombinedDateTime = () => {
     if (!date) return ""
@@ -84,35 +137,83 @@ export function ReportForm() {
     return `${year}-${month}-${day}T${hh}:${minute}`
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (status === "submitting") return
 
+    const newErrors: typeof errors = {}
+    if (!university) {
+      newErrors.university = "Please select a university"
+    }
+    if (!date) {
+      newErrors.date = "Please select a date"
+    }
+    if (!incidentType) {
+      newErrors.incidentType = "Please select an incident type"
+    }
+    if (!category || !specificLocation) {
+      newErrors.location = "Please fill in location details"
+    }
+    if (!description.trim()) {
+      newErrors.description = "Please provide a description of the incident"
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      return
+    }
+
+    setErrors({})
     setStatus("submitting")
-    // Simulate secure encryption + submission
-    setTimeout(() => {
-      const id = generateGhostId()
-      setGhostId(id)
-      setStatus("success")
-      toast.success("Report filed securely", {
-        description: (
-          <span>
-            Your GhostID is{" "}
-            <button
-              onClick={() => {
-                navigator.clipboard?.writeText(id)
-                toast.success("GhostID copied to clipboard")
-              }}
-              className="font-mono font-bold text-secondary underline-offset-2 hover:underline"
-            >
-              {id}
-            </button>{" "}
-            — tap to copy.
-          </span>
-        ),
-        duration: 8000,
-      })
-    }, 2000)
+
+    try {
+      const specificItem = specificLocations.find((l) => l.value === specificLocation)
+
+      const payload = {
+        university,
+        location: {
+          type: category,
+          id: specificLocation,
+          name: specificItem ? specificItem.label : specificLocation,
+        },
+        incidentType,
+        description,
+        proofUrls: [],
+        date: new Date(getCombinedDateTime()),
+      }
+
+      const res = await postReport(payload)
+
+      if (res.success && res.data) {
+        setGhostId(res.data.postId)
+        setStatus("success")
+        toast.success("Report filed securely", {
+          description: (
+            <span>
+              Your GhostID is{" "}
+              <button
+                onClick={() => {
+                  navigator.clipboard?.writeText(res.data!.postId)
+                  toast.success("GhostID copied to clipboard")
+                }}
+                className="font-mono font-bold text-secondary underline-offset-2 hover:underline"
+              >
+                {res.data.postId}
+              </button>{" "}
+              — tap to copy.
+            </span>
+          ),
+          duration: 8000,
+        })
+      } else {
+        setStatus("idle")
+        toast.error(res.message || "Failed to submit report")
+      }
+    } catch (error) {
+      console.error(error)
+      setStatus("idle")
+      toast.error("Something went wrong")
+    }
   }
 
   const handleReset = () => {
@@ -123,6 +224,12 @@ export function ReportForm() {
     setHour("12")
     setMinute("00")
     setPeriod("PM")
+    setUniversity("")
+    setIncidentType("")
+    setCategory("")
+    setSpecificLocation("")
+    setDescription("")
+    setErrors({})
   }
 
   return (
@@ -139,7 +246,7 @@ export function ReportForm() {
         >
           {/* University */}
           <Field label="University Name" htmlFor="university">
-            <Select>
+            <Select value={university} onValueChange={handleUniversityChange}>
               <SelectTrigger id="university">
                 <SelectValue placeholder="Select your institution" />
               </SelectTrigger>
@@ -151,6 +258,9 @@ export function ReportForm() {
                 ))}
               </SelectContent>
             </Select>
+            {errors.university && (
+              <span className="text-xs text-destructive font-medium mt-1">{errors.university}</span>
+            )}
           </Field>
 
           {/* Incident Time + Harassment Type */}
@@ -178,8 +288,11 @@ export function ReportForm() {
                     <Calendar
                       mode="single"
                       selected={date}
-                      onSelect={(date) => {
-                        setDate(date)
+                      onSelect={(d) => {
+                        setDate(d)
+                        if (errors.date) {
+                          setErrors((prev) => ({ ...prev, date: undefined }))
+                        }
                       }}
                     />
                     <div className="flex items-center justify-between border-t border-white/10 p-3 bg-white/[0.02]">
@@ -238,10 +351,13 @@ export function ReportForm() {
                   </div>
                 </PopoverContent>
               </Popover>
+              {errors.date && (
+                <span className="text-xs text-destructive font-medium mt-1">{errors.date}</span>
+              )}
               <input type="hidden" name="incident-time" id="incident-time" value={getCombinedDateTime()} />
             </div>
             <Field label="Harassment Type" htmlFor="harassment-type">
-              <Select>
+              <Select value={incidentType} onValueChange={handleIncidentTypeChange}>
                 <SelectTrigger id="harassment-type">
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
@@ -253,6 +369,9 @@ export function ReportForm() {
                   ))}
                 </SelectContent>
               </Select>
+              {errors.incidentType && (
+                <span className="text-xs text-destructive font-medium mt-1">{errors.incidentType}</span>
+              )}
             </Field>
           </div>
 
@@ -260,7 +379,7 @@ export function ReportForm() {
           <Field label="Location Details">
             <div className="flex flex-col sm:flex-row items-stretch rounded-xl border border-white/10 bg-white/[0.04] backdrop-blur-md overflow-hidden focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20 focus-within:bg-white/[0.06] transition-all duration-200">
               <div className="flex-1 min-w-0 sm:flex-[2_2_0%]">
-                <Select>
+                <Select value={category} onValueChange={handleCategoryChange}>
                   <SelectTrigger className="border-0 bg-transparent backdrop-blur-none rounded-none shadow-none focus:ring-0 focus:ring-transparent focus:bg-transparent focus:border-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:outline-none h-11 w-full">
                     <SelectValue placeholder="Category" />
                   </SelectTrigger>
@@ -278,7 +397,7 @@ export function ReportForm() {
               <div className="w-full h-px sm:w-px sm:h-auto bg-white/10 self-stretch shrink-0" />
 
               <div className="flex-1 min-w-0 sm:flex-[3_3_0%]">
-                <Select>
+                <Select value={specificLocation} onValueChange={handleSpecificLocationChange}>
                   <SelectTrigger className="border-0 bg-transparent backdrop-blur-none rounded-none shadow-none focus:ring-0 focus:ring-transparent focus:bg-transparent focus:border-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:outline-none h-11 w-full">
                     <SelectValue placeholder="Select specific location" />
                   </SelectTrigger>
@@ -292,6 +411,9 @@ export function ReportForm() {
                 </Select>
               </div>
             </div>
+            {errors.location && (
+              <span className="text-xs text-destructive font-medium mt-1">{errors.location}</span>
+            )}
           </Field>
 
           {/* Description */}
@@ -299,9 +421,14 @@ export function ReportForm() {
             <Textarea
               id="description"
               rows={6}
+              value={description}
+              onChange={handleDescriptionChange}
               placeholder="Describe the sequence of events clearly…"
               className="resize-none rounded-xl border-white/10 bg-white/[0.04] backdrop-blur-md text-sm"
             />
+            {errors.description && (
+              <span className="text-xs text-destructive font-medium mt-1">{errors.description}</span>
+            )}
           </Field>
 
           {/* Evidence */}

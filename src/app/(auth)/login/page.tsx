@@ -1,5 +1,12 @@
+import { Suspense } from "react"
 import { LoginForm } from "@/components/auth/login-form"
 
 export default function LoginPage() {
-  return <LoginForm />
+  // useSearchParams() inside LoginForm/GoogleButton requires a Suspense
+  // boundary during prerendering.
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
+  )
 }
