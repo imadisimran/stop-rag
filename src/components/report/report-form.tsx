@@ -21,6 +21,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar"
 import { postReport } from "@/actions/report/report"
 import { getUniversities, getLocations, type Location } from "@/actions/universityInfo/university"
+import { uploadToCloudinary } from "@/lib/cloudinary"
+import { ProofUrl } from "@/lib/reportTypes"
+import { cn } from "@/lib/utils"
 
 
 
@@ -184,6 +187,8 @@ export function ReportForm() {
     }
     if (!description.trim()) {
       newErrors.description = "Please provide a description of the incident"
+    } else if (description.length > 3500) {
+      newErrors.description = "Description can't be more than 3500 characters long"
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -195,12 +200,25 @@ export function ReportForm() {
     setStatus("submitting")
 
     try {
+      let uploadedProofUrls: ProofUrl[] | null = null
+      if (files.length > 0) {
+        try {
+          const uploadPromises = files.map((item) => uploadToCloudinary(item.file))
+          uploadedProofUrls = await Promise.all(uploadPromises)
+        } catch (uploadError: any) {
+          console.error("Failed to upload files to Cloudinary:", uploadError)
+          setStatus("idle")
+          toast.error("Failed to upload evidence files. Please try again.")
+          return
+        }
+      }
+
       const payload = {
         university,
         location: specificLocation,
         incidentType,
         description,
-        proofUrls: [],
+        proofUrls: uploadedProofUrls,
         date: new Date(getCombinedDateTime()),
       }
 
@@ -256,6 +274,24 @@ export function ReportForm() {
 
   return (
     <GlassPanel className="p-5 md:p-8 rounded-3xl">
+      {status === "submitting" && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md">
+          <GlassPanel className="p-6 md:p-8 max-w-sm w-full mx-4 rounded-3xl flex flex-col items-center text-center space-y-4 shadow-2xl border-white/10">
+            <div className="relative flex items-center justify-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary"></div>
+              <div className="absolute animate-ping h-8 w-8 rounded-full bg-primary/20"></div>
+            </div>
+            <h4 className="font-display font-bold text-lg text-foreground animate-pulse">
+              {files.length > 0 ? "Uploading & Encrypting" : "Submitting Report"}
+            </h4>
+            <p className="text-sm text-muted-foreground">
+              {files.length > 0
+                ? `Uploading ${files.length} evidence file(s) securely to Cloudinary...`
+                : "Submitting your anonymous report securely..."}
+            </p>
+          </GlassPanel>
+        </div>
+      )}
       {status === "success" ? (
         <SuccessState ghostId={ghostId} onReset={handleReset} />
       ) : (
@@ -450,9 +486,16 @@ export function ReportForm() {
               placeholder="Describe the sequence of events clearly…"
               className="resize-none rounded-xl border-white/10 bg-white/[0.04] backdrop-blur-md text-sm"
             />
-            {errors.description && (
-              <span className="text-xs text-destructive font-medium mt-1">{errors.description}</span>
-            )}
+            <div className="flex justify-between items-center mt-1">
+              {errors.description ? (
+                <span className="text-xs text-destructive font-medium">{errors.description}</span>
+              ) : (
+                <span />
+              )}
+              <span className={cn("text-xs", description.length > 3500 ? "text-destructive font-semibold" : "text-muted-foreground")}>
+                {description.length} / 3500
+              </span>
+            </div>
           </Field>
 
           {/* Evidence */}
@@ -469,17 +512,8 @@ export function ReportForm() {
               disabled={status === "submitting"}
               className="w-full md:px-8 rounded-full font-display font-bold gap-2"
             >
-              {status === "submitting" ? (
-                <>
-                  <FiLoader className="animate-spin" />
-                  Processing…
-                </>
-              ) : (
-                <>
-                  Submit Anonymous Report
-                  <FiSend />
-                </>
-              )}
+              Submit Anonymous Report
+              <FiSend />
             </Button>
             <p className="mt-3 flex items-center justify-center md:justify-start gap-1.5 text-xs text-muted-foreground">
               <FiLock className="text-secondary" />

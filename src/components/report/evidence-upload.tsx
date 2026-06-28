@@ -36,6 +36,20 @@ export function EvidenceUpload({
       if (!incoming || incoming.length === 0) return
       setError(null)
 
+      // Check if total file count exceeds 5
+      if (files.length + incoming.length > 5) {
+        setError("Maximum of 5 files can be uploaded.")
+        return
+      }
+
+      // Check if total size exceeds 300MB
+      const currentTotalSize = files.reduce((sum, f) => sum + f.file.size, 0)
+      const incomingTotalSize = Array.from(incoming).reduce((sum, f) => sum + f.size, 0)
+      if (currentTotalSize + incomingTotalSize > 300 * 1024 * 1024) {
+        setError("Total file size cannot exceed 300MB.")
+        return
+      }
+
       const accepted: UploadedFile[] = []
       let rejected = 0
 

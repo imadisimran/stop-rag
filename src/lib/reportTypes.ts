@@ -1,22 +1,28 @@
-export interface IncidentPayload{
-  university: string;
-  location: string;
-  incidentType:string;
-  description:string;
-  proofUrls:string[];
-  date:Date;
+export interface ProofUrl {
+  type: string;
+  public_id: string;
+  secureUrl: string;
 }
 
-export interface Report{
-    postId: string;
-    university: string;
-    location: { type: string; id: string; name: string };
-    incidentType: string;
-    description: string;
-    date: Date;
-    proofUrl: { secureUrl: string }[] | null;
-    createdAt: Date;
-    status: "PENDING" | "PROCESSING" | "SUBMITTED" | "REJECTED";
+export interface IncidentPayload {
+  university: string;
+  location: string;
+  incidentType: string;
+  description: string;
+  proofUrls: ProofUrl[] | null;
+  date: Date;
+}
+
+export interface Report {
+  postId: string;
+  university: string;
+  location: { type: string; id: string; name: string };
+  incidentType: string;
+  description: string;
+  date: Date;
+  proofUrls: ProofUrl[] | null;
+  createdAt: Date;
+  status: "PENDING" | "PROCESSING" | "SUBMITTED" | "REJECTED";
 }
 
 // export interface AiVerificationResult {
