@@ -2,7 +2,7 @@ import { getCloudinarySignature } from "@/actions/cloudinary/cloudinary"
 
 export interface CloudinaryUploadResult {
   type: string
-  public_id: string
+  publicId: string
   secureUrl: string
 }
 
@@ -40,7 +40,7 @@ export async function uploadToCloudinary(file: File): Promise<CloudinaryUploadRe
 
   return {
     type: data.resource_type,
-    public_id: data.public_id,
+    publicId: data.public_id,
     secureUrl: data.secure_url,
   }
 }

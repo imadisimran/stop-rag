@@ -1,10 +1,10 @@
 export interface ProofUrl {
   type: string;
-  public_id: string;
+  publicId: string;
   secureUrl: string;
 }
 
-export interface IncidentPayload {
+export interface FrontendIncidentPayload {
   university: string;
   location: string;
   incidentType: string;
@@ -13,16 +13,57 @@ export interface IncidentPayload {
   date: Date;
 }
 
+export interface ReportStudentInfo {
+  emailHash: string;
+  userId: string;
+  university: {
+    name: string;
+    id: string;
+    session: string;
+  };
+}
+
+export type ReportStatus = "PENDING" | "PROCESSING" | "ACCEPTED" | "REJECTED" | "APPEALED" | "QUEUED";
+
+export interface AdminVerification {
+  isAppealed: boolean;
+  appealNote: string;
+  status:ReportStatus;
+  adminId?: string;
+  appealSubmittedAt?: Date | null;
+  adminNote?: string;
+  resolvedAt?: Date;
+}
+
 export interface Report {
   postId: string;
-  university: string;
-  location: { type: string; id: string; name: string };
+  university: {
+    id: string;
+    name: string;
+  };
+  location: {
+    type: string;
+    id: string;
+    name: string
+  };
   incidentType: string;
   description: string;
   date: Date;
   proofUrls: ProofUrl[] | null;
   createdAt: Date;
-  status: "PENDING" | "PROCESSING" | "SUBMITTED" | "REJECTED";
+  status: ReportStatus;
+  student: ReportStudentInfo;
+  updatedAt?: {
+    timestamp: Date,
+    status: ReportStatus,
+    verifiedBy: string,
+    adminId: string | null,
+    note: string | null
+  }[];
+  upVotesCount: number;
+  upVotesBy: string[];
+  adminVerification: null | AdminVerification;
+
 }
 
 // export interface AiVerificationResult {

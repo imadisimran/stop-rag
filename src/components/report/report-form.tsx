@@ -22,7 +22,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { postReport } from "@/actions/report/report"
 import { getUniversities, getLocations, type Location } from "@/actions/universityInfo/university"
 import { uploadToCloudinary } from "@/lib/cloudinary"
-import { ProofUrl } from "@/lib/reportTypes"
+import { FrontendIncidentPayload, ProofUrl } from "@/lib/reportTypes"
 import { cn } from "@/lib/utils"
 
 
@@ -213,7 +213,7 @@ export function ReportForm() {
         }
       }
 
-      const payload = {
+      const payload:FrontendIncidentPayload = {
         university,
         location: specificLocation,
         incidentType,

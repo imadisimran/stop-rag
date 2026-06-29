@@ -15,14 +15,15 @@ const __dirname = path.dirname(__filename);
 // ==========================================
 // 1. TYPE INTERFACES
 // ==========================================
-interface CloudinaryUpload {
-    secureUrl: string;
-    resource_type: string;
-    publicId: string;
-}
 
 interface JobData {
-    complaintId: string;
+    reportId: string;
+}
+
+interface ProofUrl {
+    type: string;
+    publicId: string;
+    secureUrl: string;
 }
 
 interface AiVerdict {
@@ -78,10 +79,10 @@ async function processNextJob(): Promise<void> {
 
     isProcessing = true;
     const currentJob = memoryQueue.shift()!;
-    const { complaintId } = currentJob;
+    const { reportId } = currentJob;
 
     console.log(`\n======================================================`);
-    console.log(`[Queue Engine] Analyzing Complaint ID: ${complaintId}`);
+    console.log(`[Queue Engine] Analyzing Report ID: ${reportId}`);
     console.log(`[Queue Engine] Remaining in Queue: ${memoryQueue.length}`);
     console.log(`======================================================`);
 
@@ -90,20 +91,32 @@ async function processNextJob(): Promise<void> {
 
     try {
         const db = mongoClient.db(process.env.MONGODB_DB);
-        const reportCollection: Collection = db.collection('reports');
+        const reportCollection: Collection = db.collection('incidents');
 
-        // Fetch report details directly from MongoDB
-        const report = await reportCollection.findOne({ _id: new ObjectId(complaintId) });
+        // Fetch only the fields needed for AI verification
+        const report = await reportCollection.findOne(
+            { _id: new ObjectId(reportId) },
+            {
+                projection: {
+                    description: 1,
+                    proofUrls: 1,
+                    "student.university.id": 1,
+                    "university.id": 1,
+                }
+            }
+        );
         if (!report) {
-            throw new Error(`Report not found in database for ID: ${complaintId}`);
+            throw new Error(`Report not found in database for ID: ${reportId}`);
         }
 
-        const narrative = report.narrative;
-        const proofFiles: CloudinaryUpload[] = report.proofUrls || [];
+        const description: string = report.description;
+        const proofFiles: ProofUrl[] = report.proofUrls || [];
+        const reportUniversityId: string = report.university?.id;
+        const studentUniversityId: string = report.student?.university?.id;
 
         // STEP 0: MARK REPORT AS PROCESSING IN THE DATABASE
         await reportCollection.updateOne(
-            { _id: new ObjectId(complaintId) },
+            { _id: new ObjectId(reportId) },
             {
                 $set: { status: "PROCESSING" },
                 $push: {
@@ -117,9 +130,9 @@ async function processNextJob(): Promise<void> {
                 } as any
             }
         );
-        console.log(`[Engine] Database status set to PROCESSING for Complaint ID: ${complaintId}`);
+        console.log(`[Engine] Database status set to PROCESSING for Report ID: ${reportId}`);
 
-        // STEP 1: STREAM CORES FROM CLOUDINARY TO LOCAL DISK (Memory Safety)
+        // STEP 1: STREAM FILES FROM CLOUDINARY TO LOCAL DISK (Memory Safety)
         for (let i = 0; i < proofFiles.length; i++) {
             const file = proofFiles[i];
             const cleanUrl = file.secureUrl;
@@ -128,10 +141,10 @@ async function processNextJob(): Promise<void> {
             const urlObj = new URL(cleanUrl);
             let extension = path.extname(urlObj.pathname).toLowerCase();
             if (!extension) {
-                extension = file.resource_type === 'video' ? '.mp4' : '.jpg';
+                extension = file.type === 'video' ? '.mp4' : '.jpg';
             }
 
-            const localPath = path.join(tempDir, `comp_${complaintId}_proof_${i}${extension}`);
+            const localPath = path.join(tempDir, `report_${reportId}_proof_${i}${extension}`);
             localTrackedPaths.push(localPath);
 
             console.log(`[Engine] Downloading asset: ${cleanUrl}`);
@@ -142,7 +155,7 @@ async function processNextJob(): Promise<void> {
 
             // STEP 2: UPLOAD TO GEMINI FILE API CONTEXT
             console.log(`[Engine] Uploading local file stream to Gemini...`);
-            const targetMime = getMimeType(extension, file.resource_type);
+            const targetMime = getMimeType(extension, file.type);
             const uploadedFile = await ai.files.upload({
                 file: localPath,
                 config: {
@@ -185,7 +198,7 @@ ABSOLUTE SAFETY & MODERATION RULES:
    - Replace explicit specific individual names or political student wing affiliations with seamless generic terms that flow naturally in the sentence structure.
    - Example 1 (Banglish): "Khaled namer ek boro vai" -> "ek boro vai".
    - Example 2 (English): If 5 individual names are listed ("Asif, Fahim, Siyam...") -> change to "5 senior students".
-   - Example 3 (Bangla): "ছাত্রলীগের ইমতিয়াজ আর সাজিদ" -> "রাজনৈতিক সংগঠনের দুই বড় ভাই" or "দুইজন বড় ভাই".
+   - Example 3 (Bangla): "ছাত্রলীগের ইমতিয়াজ আর সাজিদ" -> "রাজনৈতিক সংগঠনের দুই বড় ভাই" or "দুইজন বড় ভাই".
 
 ${proofFiles.length > 0 ? `
 CRITICAL PROOF ANALYSIS (VIDEO/IMAGE/AUDIO):
@@ -212,7 +225,7 @@ JSON SCHEMA:
 }
 
 Incident Narrative: 
-"${narrative}"
+"${description}"
 `;
 
         // STEP 4: FETCH AI VERDICT
@@ -249,17 +262,30 @@ Incident Narrative:
 
         console.log(`[Engine] Assessment Completed. Result: ${aiVerdict.isRaggingIncident} | Severity: ${aiVerdict.detectedSeverity}`);
 
-        // STEP 5: SAVE TO MONGODB
-        const finalStatus = aiVerdict.isRaggingIncident ? "SUBMITTED" : "REJECTED";
+        // STEP 5: UNIVERSITY CROSS-CHECK FOR FAKE POST DETECTION
+        // If AI detected HIGH or MEDIUM severity but the report's university
+        // doesn't match the student's own university, there's a high chance
+        // the post is fabricated — downgrade severity to LOW.
+        let finalSeverity = aiVerdict.detectedSeverity;
+        if (
+            (aiVerdict.detectedSeverity === 'HIGH' || aiVerdict.detectedSeverity === 'MEDIUM') &&
+            reportUniversityId && studentUniversityId &&
+            reportUniversityId !== studentUniversityId
+        ) {
+            console.log(`[Engine] University mismatch detected (Report: ${reportUniversityId} vs Student: ${studentUniversityId}). Downgrading severity from ${aiVerdict.detectedSeverity} to LOW.`);
+            finalSeverity = 'LOW';
+        }
+
+        // STEP 6: SAVE TO MONGODB
+        const finalStatus = aiVerdict.isRaggingIncident ? "ACCEPTED" : "REJECTED";
 
         await reportCollection.updateOne(
-            { _id: new ObjectId(complaintId) },
+            { _id: new ObjectId(reportId) },
             {
                 $set: {
-                    isRaggingIncident: aiVerdict.isRaggingIncident,
                     sanitizedTitle: aiVerdict.sanitizedTitle,
                     sanitizedDescription: aiVerdict.sanitizedDescription,
-                    detectedSeverity: aiVerdict.detectedSeverity,
+                    detectedSeverity: finalSeverity,
                     rejectionReason: aiVerdict.rejectionReason,
                     verifiedBy: "Ai",
                     status: finalStatus
@@ -275,13 +301,13 @@ Incident Narrative:
                 } as any
             }
         );
-        console.log(`[Engine] Successfully updated Database record for: ${complaintId}`);
+        console.log(`[Engine] Successfully updated Database record for Report ID: ${reportId}`);
 
     } catch (error) {
-        console.error(`[Engine Critical Error] Processing breakdown on entry ${complaintId}:`, error);
+        console.error(`[Engine Critical Error] Processing breakdown on Report ID ${reportId}:`, error);
         // Optional: Update DB status to failed or enqueued back to allow human retry
     } finally {
-        // STEP 6: EXPEL LOCAL METRICS & DISK SPACE PURGES
+        // STEP 7: CLEANUP LOCAL FILES & GEMINI UPLOADS
         console.log(`[Engine Cleaning] Running local disk recovery...`);
         for (const localPath of localTrackedPaths) {
             if (fs.existsSync(localPath)) fs.unlinkSync(localPath);
@@ -303,23 +329,41 @@ Incident Narrative:
 // ==========================================
 // 4. RECEIVER ENDPOINT
 // ==========================================
-app.post('/webhook/new-report', (req: Request<{}, {}, { complaintId: string }>, res: Response): any => {
+app.post('/api/v1/reports/verify', async (req: Request<{}, {}, { reportId: string }>, res: Response): Promise<any> => {
     try {
-        const { complaintId } = req.body;
+        const { reportId } = req.body;
 
-        if (!complaintId) {
-            return res.status(400).json({ error: "Missing required identifier parameter." });
+        if (!reportId) {
+            return res.status(400).json({ error: "Missing required reportId parameter." });
         }
 
-        // Drop the report cleanly into the local execution array
-        memoryQueue.push({ complaintId });
-        console.log(`[Receiver] Enqueued Complaint ${complaintId}. Total queue depth: ${memoryQueue.length}`);
+        // Update report status to QUEUED in the database
+        const db = mongoClient.db(process.env.MONGODB_DB);
+        await db.collection('incidents').updateOne(
+            { _id: new ObjectId(reportId) },
+            {
+                $set: { status: "QUEUED" },
+                $push: {
+                    updatedAt: {
+                        timestamp: new Date(),
+                        status: "QUEUED",
+                        verifiedBy: "Ai",
+                        adminId: null,
+                        note: "Report queued for AI verification."
+                    }
+                } as any
+            }
+        );
+
+        // Drop the report into the local execution queue
+        memoryQueue.push({ reportId });
+        console.log(`[Receiver] Enqueued Report ${reportId}. Total queue depth: ${memoryQueue.length}`);
 
         // Trigger the engine execution sequence asynchronously
         processNextJob();
 
-        // Respond to Next.js immediately (under 100ms)
-        return res.status(200).json({ success: true, message: "Successfully enqueued for AI moderation." });
+        // Respond to Next.js immediately
+        return res.status(200).json({ success: true, message: "Successfully queued for AI verification." });
     } catch (error) {
         console.error("[Receiver Error]", error);
         return res.status(500).json({ error: "Internal processing queue breakdown." });
@@ -335,8 +379,8 @@ app.get("/", (req: Request, res: Response) => {
 // ==========================================
 async function recoverUnprocessedReports() {
     try {
-        const db = mongoClient.db(process.env.DB_NAME);
-        const unprocessed = await db.collection('reports')
+        const db = mongoClient.db(process.env.MONGODB_DB);
+        const unprocessed = await db.collection('incidents')
             .find({ status: { $in: ["QUEUED", "PROCESSING"] } })
             .toArray();
 
@@ -344,7 +388,7 @@ async function recoverUnprocessedReports() {
             console.log(`[Recovery] Found ${unprocessed.length} unfinished/queued reports in MongoDB. Reloading to queue...`);
             for (const doc of unprocessed) {
                 memoryQueue.push({
-                    complaintId: doc._id.toString()
+                    reportId: doc._id.toString()
                 });
             }
             // Fire off processing sequence
