@@ -1,0 +1,357 @@
+@import "tailwindcss";
+
+/* 
+  🔮 Tailwind v4 CSS-First Configuration
+  Single source of truth — merges custom Fearless tokens with shadcn/ui tokens.
+  The @theme block replaces your tailwind.config.ts file.
+*/
+@theme inline {
+  /* ========================================
+     🎨 Core Colors (Maps to bg-primary, text-foreground, etc.)
+     ======================================== */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* ========================================
+     📊 Chart Colors (shadcn/ui)
+     ======================================== */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* ========================================
+     🗂️ Sidebar Colors (shadcn/ui)
+     ======================================== */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* ========================================
+     📏 Border Radius (shadcn v4 multiplier-based scale)
+     ======================================== */
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* ========================================
+     🔤 Typography
+     ======================================== */
+  --font-heading: var(--font-sans);
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-display), sans-serif;
+  --font-body: var(--font-body), sans-serif;
+  --font-mono: var(--font-mono), monospace;
+
+  /* ========================================
+     ✨ Animations
+     ======================================== */
+  --animate-float-slow: float-slow 20s ease-in-out infinite;
+
+  @keyframes float-slow {
+
+    0%,
+    100% {
+      transform: translate(0, 0);
+    }
+
+    50% {
+      transform: translate(30px, -20px);
+    }
+  }
+}
+
+/* 
+  ♿ Force class-based dark mode. 
+  Tailwind v4 supports this out of the box, but this ensures it strictly triggers on the .dark class.
+*/
+@custom-variant dark (&:is(.dark *));
+
+@layer base {
+  :root {
+    /* 
+      Fearless Dark Theme 
+      Base Background: #0f0f1a (Deep Space) -> HSL: 240 33% 7%
+      Base Surface: #131318 -> HSL: 240 10% 8%
+    */
+    --background: hsl(240 33% 7%);
+    --foreground: hsl(0 0% 100%);
+    /* Pure White */
+
+    --card: hsl(240 10% 8%);
+    --card-foreground: hsl(260 10% 90%);
+    /* #e4e1e9 */
+
+    --popover: hsl(240 10% 8%);
+    --popover-foreground: hsl(260 10% 90%);
+
+    /* Electric Purple #8b5cf6 -> HSL: 258 90% 66% */
+    --primary: hsl(258 90% 66%);
+    --primary-foreground: hsl(0 0% 100%);
+
+    /* Cyan Glow #06b6d4 -> HSL: 187 95% 42% */
+    --secondary: hsl(187 95% 42%);
+    --secondary-foreground: hsl(0 0% 100%);
+
+    --muted: hsl(258 10% 15%);
+    --muted-foreground: hsl(254 80% 76%);
+    /* Soft Lavender #a78bfa */
+
+    /* Amber/Orange #ffb869 -> HSL: 32 100% 71% */
+    --accent: hsl(32 100% 71%);
+    --accent-foreground: hsl(240 33% 7%);
+
+    /* Neon Red #f43f5e -> HSL: 350 89% 60% */
+    --destructive: hsl(350 89% 60%);
+    --destructive-foreground: hsl(0 0% 100%);
+
+    --border: hsl(0 0% 15%);
+    /* Subtle dark border for default shadcn states */
+    --input: hsl(0 0% 15%);
+    --ring: hsl(258 90% 66%);
+
+    --radius: 0.75rem;
+
+    /* Fearless Custom Design Tokens */
+    --success: hsl(160 84% 39%);
+    /* Neon Green #10b981 */
+    --success-foreground: hsl(0 0% 100%);
+
+    --glow-purple: hsl(258 90% 66% / 0.25);
+    --glow-cyan: hsl(187 95% 42% / 0.25);
+
+    /* Chart Colors — themed to match the Fearless palette */
+    --chart-1: hsl(258 90% 66%);
+    --chart-2: hsl(187 95% 42%);
+    --chart-3: hsl(32 100% 71%);
+    --chart-4: hsl(160 84% 39%);
+    --chart-5: hsl(350 89% 60%);
+
+    /* Sidebar Colors */
+    --sidebar: hsl(240 33% 7%);
+    --sidebar-foreground: hsl(0 0% 100%);
+    --sidebar-primary: hsl(258 90% 66%);
+    --sidebar-primary-foreground: hsl(0 0% 100%);
+    --sidebar-accent: hsl(258 10% 15%);
+    --sidebar-accent-foreground: hsl(260 10% 90%);
+    --sidebar-border: hsl(0 0% 15%);
+    --sidebar-ring: hsl(258 90% 66%);
+
+    /* Typography Tokens */
+    --font-display: 'Space Grotesk', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply antialiased bg-background text-foreground;
+    font-family: var(--font-body);
+  }
+
+  /* Global Focus States for Accessibility */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  html {
+    @apply font-sans;
+  }
+}
+
+@layer components {
+  /* ========================================
+     🔮 Glassmorphism Component System
+     ======================================== */
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 20px;
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.10);
+    @apply transition-all duration-300 ease-out;
+    /* 1. Ensure the container establishes a stacking context */
+    position: relative;
+  }
+
+  /* 2. Add the dynamic glow layer */
+  .glass-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    pointer-events: none;
+    /* Crucial so it doesn't block mouse events */
+    background: radial-gradient(600px circle at var(--mouse-x, 0px) var(--mouse-y, 0px),
+        hsl(258 90% 66% / 0.15),
+        transparent 40%);
+    z-index: 1;
+  }
+
+  /* 3. Make sure your card's content sits above the glow layer */
+  .glass-card>* {
+    position: relative;
+    z-index: 2;
+  }
+
+  .glass-card:hover {
+    transform: translateY(-4px);
+    box-shadow:
+      0 12px 40px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  }
+
+  .glass-elevated {
+    background: rgba(139, 92, 246, 0.08);
+    backdrop-filter: blur(30px) saturate(200%);
+    -webkit-backdrop-filter: blur(30px) saturate(200%);
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    border-radius: 24px;
+    box-shadow:
+      0 8px 40px rgba(139, 92, 246, 0.15),
+      0 0 80px rgba(6, 182, 212, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    @apply transition-all duration-300 ease-out;
+  }
+
+  .glass-navbar {
+    background: rgba(10, 10, 15, 0.80);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .glass-input {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 12px;
+    @apply transition-all duration-[250ms] ease-out;
+  }
+
+  .glass-input:focus {
+    border-color: rgba(139, 92, 246, 0.60);
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  /* ========================================
+     ✨ Signature Glow Background System
+     ======================================== */
+
+  .glow-orb-purple {
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, var(--glow-purple) 0%, transparent 70%);
+    border-radius: 9999px;
+    filter: blur(80px);
+    opacity: 0.6;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .glow-orb-cyan {
+    position: absolute;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, var(--glow-cyan) 0%, transparent 70%);
+    border-radius: 9999px;
+    filter: blur(80px);
+    opacity: 0.5;
+    pointer-events: none;
+    z-index: 0;
+  }
+}
+
+@layer utilities {
+
+  /* Gradient Text Utility */
+  .text-gradient {
+    background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Custom Shadow Glows */
+  .shadow-glow-purple {
+    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.40);
+  }
+
+  .shadow-glow-cyan {
+    box-shadow: 0 4px 20px rgba(6, 182, 212, 0.40);
+  }
+}
+
+/* ♿ Accessibility: Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  ::before,
+  ::after {
+    animation-delay: -1ms !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    background-attachment: initial !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0ms !important;
+  }
+
+  .glass-card:hover,
+  .glass-elevated:hover {
+    transform: none;
+  }
+}
+
+
+html {
+  scrollbar-gutter: stable;
+}
+
+html body[data-scroll-locked] {
+  margin-right: 0px !important;
+  padding-right: 0px !important;
+  --removed-body-scroll-bar-size: 0px !important;
+}
