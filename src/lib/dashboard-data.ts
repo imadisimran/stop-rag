@@ -77,11 +77,11 @@ export const dashboardReports: DashboardReport[] = [
   },
 ]
 
-/** Student-portal navigation used by the dashboard sidebar / mobile nav. */
 export const dashboardNavItems = [
-  { label: "Dashboard", href: "/dashboard", icon: "dashboard", active: true },
+  { label: "Dashboard", href: "/dashboard", icon: "dashboard" },
   { label: "My Reports", href: "#", icon: "reports" },
   { label: "Safety Resources", href: "#", icon: "safety" },
   { label: "Emergency", href: "#", icon: "emergency" },
-  { label: "Settings", href: "#", icon: "settings" },
+  { label: "Profile", href: "/dashboard/profile", icon: "profile" },
 ]
+

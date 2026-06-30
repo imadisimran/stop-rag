@@ -103,6 +103,11 @@ export function DashboardTopbar() {
                     Dashboard
                   </Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem asChild className="cursor-pointer focus:bg-white/10 focus:text-white rounded-lg px-2 py-1.5">
+                  <Link href="/dashboard/profile" className="w-full text-sm font-body">
+                    Profile
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-white/10 my-1" />
                 <DropdownMenuItem
                   variant="destructive"

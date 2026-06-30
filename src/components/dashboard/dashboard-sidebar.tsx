@@ -8,11 +8,13 @@ import {
   FiAlertTriangle,
   FiSettings,
   FiPlusCircle,
+  FiUser,
 } from "react-icons/fi"
 import { dashboardNavItems } from "@/lib/dashboard-data"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { usePathname } from "next/navigation"
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   dashboard: FiHome,
@@ -20,9 +22,13 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   safety: FiShield,
   emergency: FiAlertTriangle,
   settings: FiSettings,
+  profile: FiUser,
 }
 
+
 export function DashboardSidebar() {
+  const pathname = usePathname()
+
   return (
     <aside className="hidden lg:flex flex-col fixed left-[max(0px,calc((100vw-1440px)/2))] top-20 h-[calc(100vh-80px)] w-64 bg-white/[0.03] backdrop-blur-xl border-r border-white/[0.08] py-6 z-40">
       {/* Brand Header */}
@@ -49,6 +55,8 @@ export function DashboardSidebar() {
       <nav className="flex-1 flex flex-col gap-1 py-4 px-3">
         {dashboardNavItems.map((item, index) => {
           const Icon = iconMap[item.icon] ?? FiHome
+          const isActive = pathname === item.href
+
           return (
             <motion.div
               key={item.label}
@@ -60,7 +68,7 @@ export function DashboardSidebar() {
                 href={item.href}
                 className={cn(
                   "flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition-all",
-                  item.active
+                  isActive
                     ? "bg-primary/10 text-primary border-r-2 border-primary"
                     : "text-muted-foreground hover:bg-white/5 hover:text-primary"
                 )}
@@ -72,6 +80,7 @@ export function DashboardSidebar() {
           )
         })}
       </nav>
+
 
       {/* Report Incident CTA */}
       <motion.div

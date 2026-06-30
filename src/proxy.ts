@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getToken } from "next-auth/jwt"
 
 // Routes that require an authenticated session.
-const protectedRoutes = ["/report"]
+const protectedRoutes = ["/report","/dashboard"]
 
 // Auth-only routes. If an already-logged-in user lands here, send them home
 // (avoids showing the login/register page again).
@@ -43,5 +43,5 @@ export async function proxy(req: NextRequest) {
 export const config = {
   // Only run the proxy for the routes we actually care about so the rest of
   // the app (and Next auth's own endpoints) stay fast and unguarded.
-  matcher: ["/report/:path*", "/login", "/register"],
+  matcher: ["/report/:path*", "/login", "/register", "/dashboard/:path*"],
 }

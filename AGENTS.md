@@ -1,1 +1,1 @@
-Before writing any code analyze the package.json to understand the package and dependancy also understand the version of my code.
+Before writing any code analyze the package.json to understand the package and dependancys.
