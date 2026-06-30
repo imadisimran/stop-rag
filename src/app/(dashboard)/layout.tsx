@@ -13,15 +13,13 @@ export default function DashboardLayout({
       {/* Background glow orbs */}
       <GlowBackground />
 
-      {/* Sidebar (desktop) */}
-      <DashboardSidebar />
-
       {/* Top bar */}
       <DashboardTopbar />
 
-      {/* Main content: offset for sidebar + top bar */}
-      <div className="lg:ml-64 pt-16 md:pt-20 min-h-screen max-w-[1440px] mx-auto">
-        <main className="px-5 md:px-10 py-8 md:py-10 pb-28 lg:pb-10">
+      {/* Layout: Sidebar + Main Content */}
+      <div className="pt-16 md:pt-20 flex min-h-screen max-w-[1440px] mx-auto">
+        <DashboardSidebar />
+        <main className="flex-1 lg:ml-64 px-5 md:px-10 py-8 md:py-10 pb-28 lg:pb-10">
           {children}
         </main>
       </div>

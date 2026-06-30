@@ -24,13 +24,13 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 
 export function DashboardSidebar() {
   return (
-    <aside className="hidden lg:flex flex-col fixed left-[max(0px,calc((100vw-1440px)/2))] top-0 h-full w-64 bg-background/80 backdrop-blur-2xl border-r border-white/[0.08] z-40">
+    <aside className="hidden lg:flex flex-col fixed left-[max(0px,calc((100vw-1440px)/2))] top-20 h-[calc(100vh-80px)] w-64 bg-white/[0.03] backdrop-blur-xl border-r border-white/[0.08] py-6 z-40">
       {/* Brand Header */}
       <motion.div
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.4 }}
-        className="px-6 py-6 flex items-center gap-3"
+        className="px-6 mb-6 flex items-center gap-3"
       >
         <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center shrink-0 shadow-glow-purple">
           <FiShield className="text-white text-lg" />
