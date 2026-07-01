@@ -213,7 +213,7 @@ export function ReportForm() {
         }
       }
 
-      const payload:FrontendIncidentPayload = {
+      const payload: FrontendIncidentPayload = {
         university,
         location: specificLocation,
         incidentType,

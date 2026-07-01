@@ -78,7 +78,7 @@ export default function ProfilePage() {
             <ProfileResidenceCard user={user} />
           </div>
 
-          <ProfileAccessControlCard />
+          <ProfileAccessControlCard user={user} />
         </div>
 
       </div>
