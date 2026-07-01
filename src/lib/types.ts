@@ -32,20 +32,25 @@ export interface Incident {
 
 export type FilterType = "All" | "Recent" | "Damage" | "Urgent"
 
-interface AcademicUnit {
+export interface AcademicUnit {
   type: "DEPARTMENT" | "INSTITUTE";
   name: string;
   id: string;
 };
 
-interface Residence {
+export interface Residence {
   type: "HALL" | "HOSTEL";
   name: string;
   id: string;
 };
 
-interface StudentDetails {
-  university: string;
+export interface University{
+  name:string;
+  id:string;
+}
+
+export interface StudentDetails {
+  university: University;
   academicSession: string;
   academicUnit: AcademicUnit
   residence: Residence

@@ -1,11 +1,14 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { motion, AnimatePresence, Variants } from "framer-motion"
 import { FiEdit3, FiLoader } from "react-icons/fi"
 import { toast } from "sonner"
+import { useForm, Controller } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
 
-import { UserProfile } from "@/actions/profile/profile"
+import { UserProfile, updateProfile } from "@/actions/profile/profile"
 import { getUniversities, getLocations, Location } from "@/actions/universityInfo/university"
 
 import {
@@ -19,7 +22,6 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -27,17 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-
-// ─── Types ────────────────────────────────────────────────────────────────
-interface FormData {
-  name: string
-  university: string          // composite "id:name" like report-form
-  session: string
-  academicCategory: string    // "DEPARTMENT" | "INSTITUTE"
-  academicUnitId: string      // composite "type:id:name"
-  residenceCategory: string   // "HALL" | "HOSTEL"
-  residenceId: string         // composite "type:id:name"
-}
+import { Field, FieldLabel, FieldError } from "@/components/ui/field"
 
 // ─── Session Options ──────────────────────────────────────────────────────
 const SESSION_OPTIONS = [
@@ -72,16 +64,30 @@ const fieldVariants: Variants = {
   }),
 }
 
+// ─── Validation Schema ───────────────────────────────────────────────────
+const formSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  session: z.string().min(1, "Academic session is required"),
+  university: z.string().min(1, "University is required"),
+  academicCategory: z.string().min(1, "Academic type is required"),
+  academicUnitId: z.string().min(1, "Academic unit is required"),
+  residenceCategory: z.string().optional(),
+  residenceId: z.string().optional(),
+})
+
+type ProfileFormValues = z.infer<typeof formSchema>
+
 // ─── Component ────────────────────────────────────────────────────────────
 export function UpdateProfileDialog({
   user,
   children,
+  onUpdate,
 }: {
   user: UserProfile | null
   children: React.ReactNode
+  onUpdate?: (updatedUser: UserProfile) => void
 }) {
   const [open, setOpen] = useState(false)
-  const selectOpenRef = useRef(false) // Track if any select is open
 
   // Data from server
   const [universitiesList, setUniversitiesList] = useState<{ id: string; name: string }[]>([])
@@ -92,16 +98,49 @@ export function UpdateProfileDialog({
   const [loadingLocations, setLoadingLocations] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  // Form state
-  const [formData, setFormData] = useState<FormData>({
-    name: "",
-    university: "",
-    session: "",
-    academicCategory: "",
-    academicUnitId: "",
-    residenceCategory: "",
-    residenceId: "",
+  // React Hook Form
+  const form = useForm<ProfileFormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+      university: "",
+      session: "",
+      academicCategory: "",
+      academicUnitId: "",
+      residenceCategory: "",
+      residenceId: "",
+    },
   })
+
+  const watchUniversity = form.watch("university")
+  const watchAcademicCategory = form.watch("academicCategory")
+  const watchResidenceCategory = form.watch("residenceCategory")
+
+  // Dynamically determine available categories based on loaded locations
+  const availableAcademicCategories = useMemo(() => {
+    if (!watchUniversity || loadingLocations || locationsList.length === 0) {
+      return ACADEMIC_CATEGORIES
+    }
+    return ACADEMIC_CATEGORIES.filter((cat) =>
+      locationsList.some((loc) => loc.type === cat.value)
+    )
+  }, [watchUniversity, loadingLocations, locationsList])
+
+  const availableResidenceCategories = useMemo(() => {
+    if (!watchUniversity || loadingLocations || locationsList.length === 0) {
+      return RESIDENCE_CATEGORIES
+    }
+    return RESIDENCE_CATEGORIES.filter((cat) =>
+      locationsList.some((loc) => loc.type === cat.value)
+    )
+  }, [watchUniversity, loadingLocations, locationsList])
+
+  const hasResidenceOptions = useMemo(() => {
+    if (!watchUniversity || loadingLocations) {
+      return true
+    }
+    return locationsList.some((loc) => loc.type === "HALL" || loc.type === "HOSTEL")
+  }, [watchUniversity, loadingLocations, locationsList])
 
   // ─── Fetch universities on dialog open ────────────────────────────────
   useEffect(() => {
@@ -133,13 +172,17 @@ export function UpdateProfileDialog({
     let matchedUniversity = ""
 
     if (details?.university) {
-      const match = universitiesList.find((u) => u.name === details.university)
+      const matchName = typeof details.university === "string"
+        ? details.university
+        : (details.university as any)?.name
+
+      const match = universitiesList.find((u) => u.name === matchName)
       if (match) {
         matchedUniversity = `${match.id}:${match.name}`
       }
     }
 
-    setFormData({
+    form.reset({
       name: user?.name || "",
       university: matchedUniversity,
       session: details?.academicSession || "",
@@ -152,17 +195,17 @@ export function UpdateProfileDialog({
         ? `${details.residence.type}:${details.residence.id}:${details.residence.name}`
         : "",
     })
-  }, [open, universitiesList, user])
+  }, [open, universitiesList, user, form])
 
   // ─── Fetch locations when university changes ─────────────────────────
   useEffect(() => {
-    if (!formData.university) {
+    if (!watchUniversity) {
       setLocationsList([])
       return
     }
 
     const fetchLocations = async () => {
-      const uniId = formData.university.split(":")[0]
+      const uniId = watchUniversity.split(":")[0]
       setLoadingLocations(true)
       try {
         const res = await getLocations(uniId)
@@ -178,95 +221,86 @@ export function UpdateProfileDialog({
       }
     }
     fetchLocations()
-  }, [formData.university])
+  }, [watchUniversity])
 
   // ─── Reset categories if not available in fetched locations ───────────
   useEffect(() => {
-    if (!loadingLocations && formData.university) {
-      setFormData((prev) => {
-        const hasAcademic = locationsList.some((loc) => loc.type === prev.academicCategory)
-        const hasResidence = locationsList.some((loc) => loc.type === prev.residenceCategory)
-        return {
-          ...prev,
-          academicCategory: hasAcademic ? prev.academicCategory : "",
-          academicUnitId: hasAcademic ? prev.academicUnitId : "",
-          residenceCategory: hasResidence ? prev.residenceCategory : "",
-          residenceId: hasResidence ? prev.residenceId : "",
-        }
-      })
+    if (!loadingLocations && watchUniversity) {
+      const currentCategory = form.getValues("academicCategory")
+      const currentResCategory = form.getValues("residenceCategory")
+
+      const hasAcademic = locationsList.some((loc) => loc.type === currentCategory)
+      const hasResidence = locationsList.some((loc) => loc.type === currentResCategory)
+
+      if (!hasAcademic) {
+        form.setValue("academicCategory", "")
+        form.setValue("academicUnitId", "")
+      }
+      if (!hasResidence) {
+        form.setValue("residenceCategory", "")
+        form.setValue("residenceId", "")
+      }
     }
-  }, [locationsList, loadingLocations, formData.university])
+  }, [locationsList, loadingLocations, watchUniversity, form])
 
   // ─── Handlers ─────────────────────────────────────────────────────────
   const handleUniversityChange = (val: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      university: val,
-      academicCategory: "",
-      academicUnitId: "",
-      residenceCategory: "",
-      residenceId: "",
-    }))
+    form.setValue("university", val, { shouldValidate: true })
+    form.setValue("academicCategory", "")
+    form.setValue("academicUnitId", "")
+    form.setValue("residenceCategory", "")
+    form.setValue("residenceId", "")
   }
 
   const handleAcademicCategoryChange = (val: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      academicCategory: val,
-      academicUnitId: "",
-    }))
+    form.setValue("academicCategory", val, { shouldValidate: true })
+    form.setValue("academicUnitId", "")
   }
 
   const handleResidenceCategoryChange = (val: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      residenceCategory: val,
-      residenceId: "",
-    }))
+    form.setValue("residenceCategory", val, { shouldValidate: true })
+    form.setValue("residenceId", "")
   }
 
   // ─── Handle save ─────────────────────────────────────────────────────
-  const handleSave = async () => {
-    // Validation
-    if (!formData.name.trim()) {
-      toast.error("Name is required")
-      return
+  const onSubmit = async (data: ProfileFormValues) => {
+    // Custom validation for residence options
+    if (hasResidenceOptions) {
+      if (!data.residenceCategory) {
+        form.setError("residenceCategory", { type: "manual", message: "Residence type is required" })
+        return
+      }
+      if (!data.residenceId) {
+        form.setError("residenceId", { type: "manual", message: "Residence is required" })
+        return
+      }
     }
 
     setSaving(true)
     try {
-      // TODO: Wire up to server action for profile update
-      toast.success("Profile update submitted successfully", {
-        description: "Changes will be reflected after verification.",
+      const res = await updateProfile({
+        name: data.name,
+        university: data.university,
+        academicUnit: data.academicUnitId,
+        residence: data.residenceId || "",
+        session: data.session,
       })
-      setOpen(false)
+
+      if (res.success) {
+        toast.success("Profile updated successfully")
+        if (onUpdate && res.data) {
+          onUpdate(res.data)
+        }
+        setOpen(false)
+      } else {
+        toast.error(res.message || "Failed to update profile")
+      }
     } catch {
       toast.error("Failed to update profile")
     } finally {
       setSaving(false)
     }
   }
-
-  // Dynamically determine available categories based on loaded locations
-  const availableAcademicCategories =
-    !formData.university || loadingLocations || locationsList.length === 0
-      ? ACADEMIC_CATEGORIES
-      : ACADEMIC_CATEGORIES.filter((cat) =>
-          locationsList.some((loc) => loc.type === cat.value)
-        )
-
-  const availableResidenceCategories =
-    !formData.university || loadingLocations || locationsList.length === 0
-      ? RESIDENCE_CATEGORIES
-      : RESIDENCE_CATEGORIES.filter((cat) =>
-          locationsList.some((loc) => loc.type === cat.value)
-        )
-
-  // Check if university has any residence options
-  const hasResidenceOptions =
-    !formData.university ||
-    loadingLocations ||
-    locationsList.some((loc) => loc.type === "HALL" || loc.type === "HOSTEL")
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -276,27 +310,11 @@ export function UpdateProfileDialog({
         className="sm:max-w-lg bg-popover/95 backdrop-blur-xl border-white/10 shadow-[0_8px_60px_rgba(139,92,246,0.15),0_0_120px_rgba(6,182,212,0.06)] overflow-y-auto max-h-[90vh]"
         showCloseButton
         onPointerDownOutside={(e) => {
-          // If any select dropdown is currently open, prevent dialog close
-          // Check for Radix select portal elements
-          const target = e.target as Element
-          const isSelectRelated = 
-            target.closest('[data-radix-select-content]') !== null ||
-            target.closest('[data-radix-select-trigger]') !== null ||
-            document.querySelector('[data-radix-select-content][data-state="open"]') !== null
-
-          if (isSelectRelated) {
-            e.preventDefault()
-          }
+          e.preventDefault();
         }}
-        // Also handle onInteractOutside as a fallback
+        // 2. Safely prevent standard closing behaviors on layered element interactions
         onInteractOutside={(e) => {
-          const target = e.target as Element
-          if (
-            target.closest('[data-radix-select-content]') ||
-            target.closest('[data-radix-select-trigger]')
-          ) {
-            e.preventDefault()
-          }
+          e.preventDefault();
         }}
       >
         <DialogHeader>
@@ -312,7 +330,7 @@ export function UpdateProfileDialog({
         </DialogHeader>
 
         {/* ── Form Fields ──────────────────────────────────────────── */}
-        <div className="space-y-5 py-2">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 py-2">
           <AnimatePresence mode="wait">
             {/* 1. Name */}
             <motion.div
@@ -321,22 +339,27 @@ export function UpdateProfileDialog({
               variants={fieldVariants}
               initial="hidden"
               animate="visible"
-              className="space-y-2"
             >
-              <Label
-                htmlFor="profile-name"
-                className="text-[10px] text-secondary uppercase font-mono tracking-widest"
-              >
-                Student Name
-              </Label>
-              <Input
-                id="profile-name"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, name: e.target.value }))
-                }
-                placeholder="Enter your name"
-                className="bg-white/[0.04] border-white/10 backdrop-blur-md rounded-xl h-11 px-4 text-white placeholder:text-muted-foreground/50 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all duration-200"
+              <Controller
+                name="name"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor={field.name} className="text-[10px] text-secondary uppercase font-mono tracking-widest">
+                      Student Name
+                    </FieldLabel>
+                    <Input
+                      {...field}
+                      id={field.name}
+                      aria-invalid={fieldState.invalid}
+                      placeholder="Enter your name"
+                      className="bg-white/[0.04] border-white/10 backdrop-blur-md rounded-xl h-11 px-4 text-white placeholder:text-muted-foreground/50 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all duration-200"
+                    />
+                    {fieldState.invalid && (
+                      <FieldError errors={[fieldState.error]} className="font-mono text-[10px] uppercase tracking-widest text-destructive" />
+                    )}
+                  </Field>
+                )}
               />
             </motion.div>
 
@@ -347,28 +370,36 @@ export function UpdateProfileDialog({
               variants={fieldVariants}
               initial="hidden"
               animate="visible"
-              className="space-y-2"
             >
-              <Label className="text-[10px] text-secondary uppercase font-mono tracking-widest">
-                Academic Session
-              </Label>
-              <Select
-                value={formData.session}
-                onValueChange={(val) =>
-                  setFormData((prev) => ({ ...prev, session: val }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select session" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SESSION_OPTIONS.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Controller
+                name="session"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor={field.name} className="text-[10px] text-secondary uppercase font-mono tracking-widest">
+                      Academic Session
+                    </FieldLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger id={field.name} aria-invalid={fieldState.invalid}>
+                        <SelectValue placeholder="Select session" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SESSION_OPTIONS.map((s) => (
+                          <SelectItem key={s} value={s}>
+                            {s}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {fieldState.invalid && (
+                      <FieldError errors={[fieldState.error]} className="font-mono text-[10px] uppercase tracking-widest text-destructive" />
+                    )}
+                  </Field>
+                )}
+              />
             </motion.div>
 
             {/* 3. University Dropdown */}
@@ -378,33 +409,43 @@ export function UpdateProfileDialog({
               variants={fieldVariants}
               initial="hidden"
               animate="visible"
-              className="space-y-2"
             >
-              <Label className="text-[10px] text-secondary uppercase font-mono tracking-widest">
-                University
-              </Label>
-              {loadingUnis ? (
-                <div className="flex items-center gap-2 h-11 px-4 rounded-xl border border-white/10 bg-white/[0.04] text-muted-foreground text-sm">
-                  <FiLoader className="animate-spin text-primary" />
-                  <span className="font-mono text-xs">Loading universities...</span>
-                </div>
-              ) : (
-                <Select
-                  value={formData.university}
-                  onValueChange={handleUniversityChange}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select university" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {universitiesList.map((uni) => (
-                      <SelectItem key={uni.id} value={`${uni.id}:${uni.name}`}>
-                        {uni.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
+              <Controller
+                name="university"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor={field.name} className="text-[10px] text-secondary uppercase font-mono tracking-widest">
+                      University
+                    </FieldLabel>
+                    {loadingUnis ? (
+                      <div className="flex items-center gap-2 h-11 px-4 rounded-xl border border-white/10 bg-white/[0.04] text-muted-foreground text-sm">
+                        <FiLoader className="animate-spin text-primary" />
+                        <span className="font-mono text-xs">Loading universities...</span>
+                      </div>
+                    ) : (
+                      <Select
+                        value={field.value}
+                        onValueChange={handleUniversityChange}
+                      >
+                        <SelectTrigger id={field.name} aria-invalid={fieldState.invalid}>
+                          <SelectValue placeholder="Select university" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {universitiesList.map((uni) => (
+                            <SelectItem key={uni.id} value={`${uni.id}:${uni.name}`}>
+                              {uni.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {fieldState.invalid && (
+                      <FieldError errors={[fieldState.error]} className="font-mono text-[10px] uppercase tracking-widest text-destructive" />
+                    )}
+                  </Field>
+                )}
+              />
             </motion.div>
 
             {/* 4. Academic Unit — Merged Field (Category + Specific) */}
@@ -414,82 +455,100 @@ export function UpdateProfileDialog({
               variants={fieldVariants}
               initial="hidden"
               animate="visible"
-              className="space-y-2"
             >
-              <Label className="text-[10px] text-secondary uppercase font-mono tracking-widest">
-                Academic Unit
-              </Label>
-              {loadingLocations ? (
-                <div className="flex items-center gap-2 h-11 px-4 rounded-xl border border-white/10 bg-white/[0.04] text-muted-foreground text-sm">
-                  <FiLoader className="animate-spin text-primary" />
-                  <span className="font-mono text-xs">Loading...</span>
-                </div>
-              ) : (
-                <div className="flex flex-col sm:flex-row items-stretch rounded-xl border border-white/10 bg-white/[0.04] backdrop-blur-md overflow-hidden focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20 focus-within:bg-white/[0.06] transition-all duration-200">
-                  {/* Category selector */}
-                  <div className="flex-1 min-w-0 sm:flex-[2_2_0%]">
-                    <Select
-                      value={formData.academicCategory}
-                      onValueChange={handleAcademicCategoryChange}
-                      disabled={!formData.university}
-                    >
-                      <SelectTrigger className="border-0 bg-transparent backdrop-blur-none rounded-none shadow-none focus:ring-0 focus:ring-transparent focus:bg-transparent focus:border-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:outline-none h-11 w-full">
-                        <SelectValue
-                          placeholder={formData.university ? "Type" : "Select university first"}
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableAcademicCategories.map((c) => (
-                          <SelectItem key={c.value} value={c.value}>
-                            {c.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+              <Field>
+                <FieldLabel className="text-[10px] text-secondary uppercase font-mono tracking-widest">
+                  Academic Unit
+                </FieldLabel>
+                {loadingLocations ? (
+                  <div className="flex items-center gap-2 h-11 px-4 rounded-xl border border-white/10 bg-white/[0.04] text-muted-foreground text-sm">
+                    <FiLoader className="animate-spin text-primary" />
+                    <span className="font-mono text-xs">Loading...</span>
                   </div>
-
-                  {/* Divider */}
-                  <div className="w-full h-px sm:w-px sm:h-auto bg-white/10 self-stretch shrink-0" />
-
-                  {/* Specific location selector */}
-                  <div className="flex-1 min-w-0 sm:flex-[3_3_0%]">
-                    <Select
-                      value={formData.academicUnitId}
-                      onValueChange={(val) =>
-                        setFormData((prev) => ({ ...prev, academicUnitId: val }))
-                      }
-                      disabled={!formData.university || !formData.academicCategory}
-                    >
-                      <SelectTrigger className="border-0 bg-transparent backdrop-blur-none rounded-none shadow-none focus:ring-0 focus:ring-transparent focus:bg-transparent focus:border-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:outline-none h-11 w-full">
-                        <SelectValue
-                          placeholder={
-                            !formData.university
-                              ? "Select university first"
-                              : !formData.academicCategory
-                                ? "Select type first"
-                                : "Select location"
-                          }
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {locationsList.filter((l) => l.type === formData.academicCategory).length === 0 ? (
-                          <SelectItem value="none" disabled>
-                            No academic units available
-                          </SelectItem>
-                        ) : (
-                          locationsList
-                            .filter((l) => l.type === formData.academicCategory)
-                            .map((l) => (
-                              <SelectItem key={l.id} value={`${l.type}:${l.id}:${l.name}`}>
-                                {l.name}
-                              </SelectItem>
-                            ))
+                ) : (
+                  <div className="flex flex-col sm:flex-row items-stretch rounded-xl border border-white/10 bg-white/[0.04] backdrop-blur-md overflow-hidden focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20 focus-within:bg-white/[0.06] transition-all duration-200">
+                    {/* Category selector */}
+                    <div className="flex-1 min-w-0 sm:flex-[2_2_0%]">
+                      <Controller
+                        name="academicCategory"
+                        control={form.control}
+                        render={({ field }) => (
+                          <Select
+                            value={field.value}
+                            onValueChange={handleAcademicCategoryChange}
+                            disabled={!watchUniversity}
+                          >
+                            <SelectTrigger className="border-0 bg-transparent backdrop-blur-none rounded-none shadow-none focus:ring-0 focus:ring-transparent focus:bg-transparent focus:border-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:outline-none h-11 w-full">
+                              <SelectValue
+                                placeholder={watchUniversity ? "Type" : "Select university first"}
+                              />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableAcademicCategories.map((c) => (
+                                <SelectItem key={c.value} value={c.value}>
+                                  {c.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         )}
-                      </SelectContent>
-                    </Select>
+                      />
+                    </div>
+
+                    {/* Divider */}
+                    <div className="w-full h-px sm:w-px sm:h-auto bg-white/10 self-stretch shrink-0" />
+
+                    {/* Specific location selector */}
+                    <div className="flex-1 min-w-0 sm:flex-[3_3_0%]">
+                      <Controller
+                        name="academicUnitId"
+                        control={form.control}
+                        render={({ field }) => (
+                          <Select
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            disabled={!watchUniversity || !watchAcademicCategory}
+                          >
+                            <SelectTrigger className="border-0 bg-transparent backdrop-blur-none rounded-none shadow-none focus:ring-0 focus:ring-transparent focus:bg-transparent focus:border-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:outline-none h-11 w-full">
+                              <SelectValue
+                                placeholder={
+                                  !watchUniversity
+                                    ? "Select university first"
+                                    : !watchAcademicCategory
+                                      ? "Select type first"
+                                      : "Select location"
+                                }
+                              />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {locationsList.filter((l) => l.type === watchAcademicCategory).length === 0 ? (
+                                <SelectItem value="none" disabled>
+                                  No academic units available
+                                </SelectItem>
+                              ) : (
+                                locationsList
+                                  .filter((l) => l.type === watchAcademicCategory)
+                                  .map((l) => (
+                                    <SelectItem key={l.id} value={`${l.type}:${l.id}:${l.name}`}>
+                                      {l.name}
+                                    </SelectItem>
+                                  ))
+                              )}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+                {/* Display errors for both selectors */}
+                {form.formState.errors.academicCategory && (
+                  <FieldError errors={[form.formState.errors.academicCategory]} className="font-mono text-[10px] uppercase tracking-widest text-destructive mt-1" />
+                )}
+                {form.formState.errors.academicUnitId && (
+                  <FieldError errors={[form.formState.errors.academicUnitId]} className="font-mono text-[10px] uppercase tracking-widest text-destructive mt-1" />
+                )}
+              </Field>
             </motion.div>
 
             {/* 5. Residence — Merged Field (Category + Specific) */}
@@ -500,114 +559,133 @@ export function UpdateProfileDialog({
                 variants={fieldVariants}
                 initial="hidden"
                 animate="visible"
-                className="space-y-2"
               >
-                <Label className="text-[10px] text-secondary uppercase font-mono tracking-widest">
-                  Residence
-                </Label>
-                {loadingLocations ? (
-                  <div className="flex items-center gap-2 h-11 px-4 rounded-xl border border-white/10 bg-white/[0.04] text-muted-foreground text-sm">
-                    <FiLoader className="animate-spin text-primary" />
-                    <span className="font-mono text-xs">Loading...</span>
-                  </div>
-                ) : (
-                  <div className="flex flex-col sm:flex-row items-stretch rounded-xl border border-white/10 bg-white/[0.04] backdrop-blur-md overflow-hidden focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20 focus-within:bg-white/[0.06] transition-all duration-200">
-                    {/* Category selector */}
-                    <div className="flex-1 min-w-0 sm:flex-[2_2_0%]">
-                      <Select
-                        value={formData.residenceCategory}
-                        onValueChange={handleResidenceCategoryChange}
-                        disabled={!formData.university}
-                      >
-                        <SelectTrigger className="border-0 bg-transparent backdrop-blur-none rounded-none shadow-none focus:ring-0 focus:ring-transparent focus:bg-transparent focus:border-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:outline-none h-11 w-full">
-                          <SelectValue
-                            placeholder={formData.university ? "Type" : "Select university first"}
-                          />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableResidenceCategories.map((c) => (
-                            <SelectItem key={c.value} value={c.value}>
-                              {c.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                <Field>
+                  <FieldLabel className="text-[10px] text-secondary uppercase font-mono tracking-widest">
+                    Residence
+                  </FieldLabel>
+                  {loadingLocations ? (
+                    <div className="flex items-center gap-2 h-11 px-4 rounded-xl border border-white/10 bg-white/[0.04] text-muted-foreground text-sm">
+                      <FiLoader className="animate-spin text-primary" />
+                      <span className="font-mono text-xs">Loading...</span>
                     </div>
-
-                    {/* Divider */}
-                    <div className="w-full h-px sm:w-px sm:h-auto bg-white/10 self-stretch shrink-0" />
-
-                    {/* Specific location selector */}
-                    <div className="flex-1 min-w-0 sm:flex-[3_3_0%]">
-                      <Select
-                        value={formData.residenceId}
-                        onValueChange={(val) =>
-                          setFormData((prev) => ({ ...prev, residenceId: val }))
-                        }
-                        disabled={!formData.university || !formData.residenceCategory}
-                      >
-                        <SelectTrigger className="border-0 bg-transparent backdrop-blur-none rounded-none shadow-none focus:ring-0 focus:ring-transparent focus:bg-transparent focus:border-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:outline-none h-11 w-full">
-                          <SelectValue
-                            placeholder={
-                              !formData.university
-                                ? "Select university first"
-                                : !formData.residenceCategory
-                                  ? "Select type first"
-                                  : "Select location"
-                            }
-                          />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {locationsList.filter((l) => l.type === formData.residenceCategory).length === 0 ? (
-                            <SelectItem value="none" disabled>
-                              No residence options available
-                            </SelectItem>
-                          ) : (
-                            locationsList
-                              .filter((l) => l.type === formData.residenceCategory)
-                              .map((l) => (
-                                <SelectItem key={l.id} value={`${l.type}:${l.id}:${l.name}`}>
-                                  {l.name}
-                                </SelectItem>
-                              ))
+                  ) : (
+                    <div className="flex flex-col sm:flex-row items-stretch rounded-xl border border-white/10 bg-white/[0.04] backdrop-blur-md overflow-hidden focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20 focus-within:bg-white/[0.06] transition-all duration-200">
+                      {/* Category selector */}
+                      <div className="flex-1 min-w-0 sm:flex-[2_2_0%]">
+                        <Controller
+                          name="residenceCategory"
+                          control={form.control}
+                          render={({ field }) => (
+                            <Select
+                              value={field.value}
+                              onValueChange={handleResidenceCategoryChange}
+                              disabled={!watchUniversity}
+                            >
+                              <SelectTrigger className="border-0 bg-transparent backdrop-blur-none rounded-none shadow-none focus:ring-0 focus:ring-transparent focus:bg-transparent focus:border-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:outline-none h-11 w-full">
+                                <SelectValue
+                                  placeholder={watchUniversity ? "Type" : "Select university first"}
+                                />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {availableResidenceCategories.map((c) => (
+                                  <SelectItem key={c.value} value={c.value}>
+                                    {c.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           )}
-                        </SelectContent>
-                      </Select>
+                        />
+                      </div>
+
+                      {/* Divider */}
+                      <div className="w-full h-px sm:w-px sm:h-auto bg-white/10 self-stretch shrink-0" />
+
+                      {/* Specific location selector */}
+                      <div className="flex-1 min-w-0 sm:flex-[3_3_0%]">
+                        <Controller
+                          name="residenceId"
+                          control={form.control}
+                          render={({ field }) => (
+                            <Select
+                              value={field.value}
+                              onValueChange={field.onChange}
+                              disabled={!watchUniversity || !watchResidenceCategory}
+                            >
+                              <SelectTrigger className="border-0 bg-transparent backdrop-blur-none rounded-none shadow-none focus:ring-0 focus:ring-transparent focus:bg-transparent focus:border-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:outline-none h-11 w-full">
+                                <SelectValue
+                                  placeholder={
+                                    !watchUniversity
+                                      ? "Select university first"
+                                      : !watchResidenceCategory
+                                        ? "Select type first"
+                                        : "Select location"
+                                  }
+                                />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {locationsList.filter((l) => l.type === watchResidenceCategory).length === 0 ? (
+                                  <SelectItem value="none" disabled>
+                                    No residence options available
+                                  </SelectItem>
+                                ) : (
+                                  locationsList
+                                    .filter((l) => l.type === watchResidenceCategory)
+                                    .map((l) => (
+                                      <SelectItem key={l.id} value={`${l.type}:${l.id}:${l.name}`}>
+                                        {l.name}
+                                      </SelectItem>
+                                    ))
+                                )}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                  {/* Display errors for both residence selectors */}
+                  {form.formState.errors.residenceCategory && (
+                    <FieldError errors={[form.formState.errors.residenceCategory]} className="font-mono text-[10px] uppercase tracking-widest text-destructive mt-1" />
+                  )}
+                  {form.formState.errors.residenceId && (
+                    <FieldError errors={[form.formState.errors.residenceId]} className="font-mono text-[10px] uppercase tracking-widest text-destructive mt-1" />
+                  )}
+                </Field>
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
 
-        {/* ── Footer ───────────────────────────────────────────────── */}
-        <DialogFooter className="bg-transparent border-white/[0.06]">
-          <Button
-            variant="outline"
-            onClick={() => setOpen(false)}
-            className="border-white/10 bg-white/[0.04] text-muted-foreground hover:bg-white/[0.08] hover:text-white font-mono text-[11px] uppercase tracking-widest"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-            className="bg-primary text-white font-bold text-[11px] uppercase tracking-widest hover:brightness-110 transition-all flex items-center gap-2"
-          >
-            {saving ? (
-              <>
-                <FiLoader className="animate-spin text-xs" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <FiEdit3 className="text-xs" />
-                Save Changes
-              </>
-            )}
-          </Button>
-        </DialogFooter>
+          {/* ── Footer ───────────────────────────────────────────────── */}
+          <DialogFooter className="bg-transparent border-white/[0.06] mt-6 pt-4 border-t">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+              className="border-white/10 bg-white/[0.04] text-muted-foreground hover:bg-white/[0.08] hover:text-white font-mono text-[11px] uppercase tracking-widest"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={saving}
+              className="bg-primary text-white font-bold text-[11px] uppercase tracking-widest hover:brightness-110 transition-all flex items-center gap-2"
+            >
+              {saving ? (
+                <>
+                  <FiLoader className="animate-spin text-xs" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <FiEdit3 className="text-xs" />
+                  Save Changes
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )

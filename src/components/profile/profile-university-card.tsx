@@ -32,7 +32,7 @@ export function ProfileUniversityCard({ user }: { user: UserProfile | null }) {
   }, { scope: containerRef })
 
   return (
-    <motion.div 
+    <motion.div
       ref={containerRef}
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
@@ -43,17 +43,17 @@ export function ProfileUniversityCard({ user }: { user: UserProfile | null }) {
         <div className="flex justify-between items-start mb-6">
           <div>
             <h3 className="text-[10px] text-secondary uppercase font-mono tracking-widest mb-2">Academic Info</h3>
-            <p className="font-display text-2xl md:text-3xl text-white">{user?.studentDetails?.university || "N/A"}</p>
+            <p className="font-display text-2xl md:text-3xl text-white">{user?.studentDetails?.university.name || "N/A"}</p>
           </div>
           <div className="text-right">
             <span className="font-mono text-xl text-primary font-bold">{count}%</span>
             <p className="text-[9px] text-muted-foreground uppercase font-mono">Completion</p>
           </div>
         </div>
-        
+
         {/* Custom progress bar */}
         <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
-          <div 
+          <div
             ref={progressBarRef}
             style={{ width: "0%" }}
             className="bg-primary h-full shadow-[0_0_10px_rgba(208,188,255,0.5)]"

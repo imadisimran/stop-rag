@@ -7,7 +7,13 @@ import { Button } from "@/components/ui/button"
 import { UserProfile } from "@/actions/profile/profile"
 import { UpdateProfileDialog } from "@/components/profile/update-profile-dialog"
 
-export function ProfileAccessControlCard({ user }: { user: UserProfile | null }) {
+export function ProfileAccessControlCard({
+  user,
+  onUpdate,
+}: {
+  user: UserProfile | null
+  onUpdate?: (updatedUser: UserProfile) => void
+}) {
   const handleAction = (actionName: string) => {
     toast.error(`Access Denied: ${actionName} requires root administrator credentials.`, {
       description: "This incident has been logged under audit code STU-LOG-SEC.",
@@ -35,7 +41,7 @@ export function ProfileAccessControlCard({ user }: { user: UserProfile | null })
         </div>
 
         <div className="w-full lg:w-auto">
-          <UpdateProfileDialog user={user}>
+          <UpdateProfileDialog user={user} onUpdate={onUpdate}>
             <Button 
               className="w-full sm:w-auto px-5 py-2.5 bg-primary text-white rounded-lg font-bold text-[11px] uppercase tracking-widest hover:brightness-110 transition-all flex items-center justify-center gap-2 cursor-pointer"
             >

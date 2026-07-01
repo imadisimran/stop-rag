@@ -2,28 +2,137 @@
 
 import { authOptions } from "@/lib/auth"
 import { dbConnect } from "@/lib/dbConnect"
-import { decryptData, generateBlindIndex } from "@/lib/encryption"
-import { ServerReturn, User } from "@/lib/types"
+import { decryptData, encryptData, generateBlindIndex } from "@/lib/encryption"
+import { AcademicUnit, Residence, ServerReturn, StudentDetails, University, User } from "@/lib/types"
 import { getServerSession } from "next-auth"
 
-export type UserProfile = Omit<User, "password" | "emailHash"> 
+export type UserProfile = Omit<User, "password" | "emailHash">
 
-export const getProfile = async ():Promise<ServerReturn<UserProfile>> => {
+export const getProfile = async (): Promise<ServerReturn<UserProfile>> => {
     const session = await getServerSession(authOptions)
     if (!session?.user) {
         return { success: false, message: "Unauthorized user" }
     }
     try {
         const usersCollection = await dbConnect("users")
-        const user = await usersCollection.findOne({ emailHash: generateBlindIndex(session.user.email || "") },{projection:{password:0,_id:0,emailHash:0}}) as UserProfile | null
-        if(!user){
+        const user = await usersCollection.findOne({ emailHash: generateBlindIndex(session.user.email || "") }, { projection: { password: 0, _id: 0, emailHash: 0 } }) as UserProfile | null
+        if (!user) {
             return { success: false, message: "Profile not found" }
         }
-        return { success: true, data: {...user,email:decryptData(user.email),name:decryptData(user.name)} }
+        return { success: true, data: { ...user, email: decryptData(user.email), name: decryptData(user.name),  } }
     }
-    catch(e){
+    catch (e) {
         console.log(e)
-        return {success:false,message:"Failed to fetch profile"}
+        return { success: false, message: "Failed to fetch profile" }
     }
-   
+
+}
+
+
+export interface UpdateProfileInput {
+    name: string
+    university: string
+    academicUnit: string
+    residence: string
+    session: string
+}
+
+export const updateProfile = async (
+    data: UpdateProfileInput
+): Promise<ServerReturn<UserProfile>> => {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.userId) {
+        return { success: false, message: "Unauthorized User" }
+    }
+
+    console.log(data)
+
+    const { name, university, academicUnit, residence, session: academicSession } = data
+
+    if (!name || !name.trim()) {
+        return { success: false, message: "Name is required" }
+    }
+
+    if (!university || !university.trim()) {
+        return { success: false, message: "University is required" }
+    }
+
+    const uniParts = university.split(":")
+    if (uniParts.length !== 2) {
+        return { success: false, message: "Invalid university format" }
+    }
+
+    if (!academicUnit || !academicUnit.trim()) {
+        return { success: false, message: "Academic unit is required" }
+    }
+
+    const academicUnitParts = academicUnit.split(":")
+    if (academicUnitParts.length !== 3) {
+        return { success: false, message: "Invalid academic unit format" }
+    }
+
+    if (!academicSession || !academicSession.trim()) {
+        return { success: false, message: "Academic session is required" }
+    }
+
+    if (!residence || !residence.trim()) {
+        return { success: false, message: "Residence is required" }
+    }
+
+    const residenceParts = residence.split(":")
+    if (residenceParts.length !== 3) {
+        return { success: false, message: "Invalid residence format" }
+    }
+
+    try {
+        const [uniId, uniName] = uniParts
+        const [academicType, academicId, academicName] = academicUnitParts
+        const [residenceType, residenceId, residenceName] = residenceParts
+
+        const academicUnitData = {
+            type: academicType,
+            id: academicId,
+            name: academicName
+        } as AcademicUnit
+
+        const residenceData = {
+            type: residenceType,
+            id: residenceId,
+            name: residenceName
+        } as Residence
+
+        const universityData = { name: uniName, id: uniId } as University
+
+        const usersCollection = await dbConnect("users")
+
+        const studentDetails: StudentDetails = {
+            university: universityData,
+            academicSession: academicSession || "",
+            academicUnit: academicUnitData,
+            residence: residenceData
+        }
+
+        const result = await usersCollection.updateOne(
+            { userId: session.user.userId },
+            {
+                $set: {
+                    name: encryptData(name.trim()),
+                    isProfileComplete: true,
+                    studentDetails
+                }
+            }
+        )
+
+        if (result.matchedCount === 0) {
+            return { success: false, message: "User profile not found" }
+        }
+
+        return {
+            success: true,
+            message: "Profile updated successfully",
+        }
+    } catch (e) {
+        console.error("Error updating profile:", e)
+        return { success: false, message: "Failed to update profile" }
+    }
 }
