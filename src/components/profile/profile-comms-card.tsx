@@ -1,9 +1,8 @@
-"use client"
-
+import { UserProfile } from "@/actions/profile/profile"
 import { motion } from "framer-motion"
-import { FiMail, FiCheckCircle } from "react-icons/fi"
+import { FiMail, FiCheckCircle, FiAlertTriangle } from "react-icons/fi"
 
-export function ProfileCommsCard() {
+export function ProfileCommsCard({ user }: { user: UserProfile | null }) {
   return (
     <motion.div 
       initial={{ opacity: 0, scale: 0.95 }}
@@ -16,14 +15,21 @@ export function ProfileCommsCard() {
         Primary Comms
       </h3>
       <div className="flex flex-wrap items-center gap-2 mb-3">
-        <p className="font-mono text-sm text-white break-all">arivera@university.edu</p>
-        <span className="flex items-center gap-1 bg-secondary/10 border border-secondary/20 px-2 py-0.5 rounded text-[9px] text-secondary font-mono uppercase">
-          <FiCheckCircle className="text-[10px] text-secondary" />
-          Verified
-        </span>
+        <p className="font-mono text-sm text-white break-all">{user?.email || "N/A"}</p>
+        {user?.isVerified ? (
+          <span className="flex items-center gap-1 bg-secondary/10 border border-secondary/20 px-2 py-0.5 rounded text-[9px] text-secondary font-mono uppercase">
+            <FiCheckCircle className="text-[10px] text-secondary" />
+            Verified
+          </span>
+        ) : (
+          <span className="flex items-center gap-1 bg-destructive/10 border border-destructive/20 px-2 py-0.5 rounded text-[9px] text-destructive font-mono uppercase">
+            <FiAlertTriangle className="text-[10px] text-destructive animate-pulse" />
+            Unverified
+          </span>
+        )}
       </div>
       <p className="text-[10px] text-muted-foreground border-t border-white/[0.08] pt-3 font-mono">
-        Encrypted via RSA-4096
+        Hash Algorithm : SHA-256
       </p>
     </motion.div>
   )

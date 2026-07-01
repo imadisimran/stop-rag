@@ -1,8 +1,7 @@
-"use client"
-
+import { UserProfile } from "@/actions/profile/profile"
 import { motion } from "framer-motion"
 
-export function SystemIdentifierCard() {
+export function ProfileResidenceCard({ user }: { user: UserProfile | null }) {
   return (
     <motion.div 
       initial={{ opacity: 0, scale: 0.95 }}
@@ -11,8 +10,8 @@ export function SystemIdentifierCard() {
       className="relative bg-white/[0.03] border border-white/[0.08] backdrop-blur-[10px] p-6 rounded-2xl flex items-center justify-between transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] hover:border-primary hover:bg-primary/5 hover:shadow-[0_0_20px_rgba(139,92,246,0.15)]"
     >
       <div>
-        <h3 className="text-[10px] text-secondary uppercase font-mono tracking-widest mb-1">System Identifier</h3>
-        <p className="font-mono text-lg text-primary tracking-tighter">STU-99021-X</p>
+        <h3 className="text-[10px] text-secondary uppercase font-mono tracking-widest mb-1">{user?.studentDetails?.residence?.type || "N/A"}</h3>
+        <p className="font-mono text-lg text-primary tracking-tighter">{user?.studentDetails?.residence?.name || "N/A"}</p>
       </div>
       <div className="flex flex-col items-center">
         <div className="h-10 w-10 rounded-full border border-secondary/30 flex items-center justify-center relative">

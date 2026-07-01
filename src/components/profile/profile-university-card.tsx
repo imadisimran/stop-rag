@@ -1,11 +1,10 @@
-"use client"
-
+import { UserProfile } from "@/actions/profile/profile"
 import { useState, useRef } from "react"
 import { motion } from "framer-motion"
 import gsap from "gsap"
 import { useGSAP } from "@gsap/react"
 
-export function AcademicDivisionCard() {
+export function ProfileUniversityCard({ user }: { user: UserProfile | null }) {
   const [count, setCount] = useState(0)
   const progressBarRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -43,8 +42,8 @@ export function AcademicDivisionCard() {
       <div className="relative bg-white/[0.03] border border-white/[0.08] backdrop-blur-[10px] p-6 md:p-8 rounded-2xl transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] hover:border-primary hover:bg-primary/5 hover:shadow-[0_0_20px_rgba(139,92,246,0.15)]">
         <div className="flex justify-between items-start mb-6">
           <div>
-            <h3 className="text-[10px] text-secondary uppercase font-mono tracking-widest mb-2">Academic Division</h3>
-            <p className="font-display text-2xl md:text-3xl text-white">Cybernetics &amp; Neural Systems</p>
+            <h3 className="text-[10px] text-secondary uppercase font-mono tracking-widest mb-2">Academic Info</h3>
+            <p className="font-display text-2xl md:text-3xl text-white">{user?.studentDetails?.university || "N/A"}</p>
           </div>
           <div className="text-right">
             <span className="font-mono text-xl text-primary font-bold">{count}%</span>
@@ -60,10 +59,6 @@ export function AcademicDivisionCard() {
             className="bg-primary h-full shadow-[0_0_10px_rgba(208,188,255,0.5)]"
           />
         </div>
-        
-        <p className="text-[10px] text-muted-foreground mt-4 font-mono">
-          INTEGRITY_CHECK: PASS // Core Credits Remaining: 12
-        </p>
       </div>
     </motion.div>
   )

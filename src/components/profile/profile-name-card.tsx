@@ -1,9 +1,10 @@
 "use client"
 
+import { UserProfile } from "@/actions/profile/profile"
 import { motion } from "framer-motion"
 import { FaFingerprint } from "react-icons/fa"
 
-export function ProfileNameCard() {
+export function ProfileNameCard({user}: {user: UserProfile | null}) {
   return (
     <motion.div 
       initial={{ opacity: 0, scale: 0.95 }}
@@ -16,13 +17,10 @@ export function ProfileNameCard() {
       
       <div className="flex justify-between items-start mb-4">
         <FaFingerprint className="text-primary text-xl group-hover:scale-110 transition-transform duration-300" />
-        <span className="font-mono text-[10px] text-muted-foreground">UID // STU-99021-X</span>
+        <span className="font-mono text-[10px] text-muted-foreground">UID // {user?.userId || "N/A"}</span>
       </div>
-      <h3 className="text-[10px] text-secondary uppercase font-mono tracking-widest mb-1">Subject Name</h3>
-      <p className="font-display text-3xl font-medium text-white">Alex Rivera</p>
-      
-      {/* Connector line extending right to meet the right card in the gap on desktop */}
-      <div className="hidden lg:block absolute top-1/2 right-[-24px] w-6 h-[1px] bg-gradient-to-r from-primary to-transparent opacity-40"></div>
+      <h3 className="text-[10px] text-secondary uppercase font-mono tracking-widest mb-1">Student Name</h3>
+      <p className="font-display text-3xl font-medium text-white">{user?.name || "N/A"}</p>
     </motion.div>
   )
 }

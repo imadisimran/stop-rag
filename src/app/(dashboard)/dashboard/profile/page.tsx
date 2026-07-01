@@ -1,55 +1,84 @@
 "use client"
 
-import { motion } from "framer-motion"
 import { ProfileHeader } from "@/components/profile/profile-header"
 import { ProfileNameCard } from "@/components/profile/profile-name-card"
 import { ProfileCommsCard } from "@/components/profile/profile-comms-card"
-import { ProfileInfoGrid } from "@/components/profile/profile-info-grid"
-import { AcademicDivisionCard } from "@/components/profile/academic-division-card"
-import { AffiliationCard } from "@/components/profile/affiliation-card"
-import { SystemIdentifierCard } from "@/components/profile/system-identifier-card"
-import { AccessControlCard } from "@/components/profile/access-control-card"
+import { ProfileSessionCard } from "@/components/profile/profile-session-card"
+import { ProfileUniversityCard } from "@/components/profile/profile-university-card"
+import { ProfileAcademicUnitCard } from "@/components/profile/profile-academic-unit-card"
+import { ProfileResidenceCard } from "@/components/profile/profile-residence-card"
+import { ProfileAccessControlCard } from "@/components/profile/profile-access-control-card"
+import { useEffect, useState } from "react"
+import { getProfile, UserProfile } from "@/actions/profile/profile"
+import { ProfileLoading } from "@/components/profile/profile-loading"
+import { ProfileError } from "@/components/profile/profile-error"
+
 
 export default function ProfilePage() {
+  const [user, setUser] = useState<UserProfile | null>(null)
+  const [err, setErr] = useState<string>("")
+  const [loading, setLoading] = useState<boolean>(true)
+
+  const fetchProfile = async () => {
+    setLoading(true)
+    setErr("")
+    try {
+      const res = await getProfile()
+      if (res.success && res?.data) {
+        setUser(res.data)
+      } else {
+        setErr(res?.message || "Failed to load system identity node")
+      }
+    } catch (e: any) {
+      setErr(e.message || "An unexpected error occurred during node decryption")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchProfile()
+  }, [])
+
+  if (loading) {
+    return (
+      <ProfileLoading />
+    )
+  }
+
+  if (err) {
+    return (
+      <ProfileError err={err} fetchProfile={fetchProfile} />
+    )
+  }
+
   return (
     <div className="space-y-8 max-w-5xl">
       {/* Header Area */}
-      <ProfileHeader />
+      <ProfileHeader user={user} />
 
       {/* Main Grid: Responsive layout for mobile, tablet, and desktop */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        
+
         {/* Left Area (Identity & Comms Details): Col Span 4 */}
         <div className="lg:col-span-4 space-y-6">
-          {/* Header System Logs */}
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.1 }}
-            className="space-y-1 font-mono text-[11px]"
-          >
-            <p className="text-muted-foreground">SYSTEM_LOG_v2.04</p>
-            <p className="text-foreground/75">
-              Security Clearance Alpha. Integrity Status: <span className="text-secondary font-semibold">Verified</span>.
-            </p>
-          </motion.div>
 
-          <ProfileNameCard />
-          <ProfileCommsCard />
-          <ProfileInfoGrid />
+          <ProfileNameCard user={user} />
+          <ProfileCommsCard user={user} />
+          <ProfileSessionCard user={user} />
         </div>
 
         {/* Right Area (Academic & Actions): Col Span 8 */}
         <div className="lg:col-span-8 space-y-6">
-          <AcademicDivisionCard />
+          <ProfileUniversityCard user={user} />
 
           {/* Affiliation & System ID row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <AffiliationCard />
-            <SystemIdentifierCard />
+            <ProfileAcademicUnitCard user={user} />
+            <ProfileResidenceCard user={user} />
           </div>
 
-          <AccessControlCard />
+          <ProfileAccessControlCard />
         </div>
 
       </div>
