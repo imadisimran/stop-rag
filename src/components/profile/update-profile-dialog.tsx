@@ -10,6 +10,7 @@ import * as z from "zod"
 
 import { UserProfile, updateProfile } from "@/actions/profile/profile"
 import { getUniversities, getLocations, Location } from "@/actions/universityInfo/university"
+import { AcademicUnit, Residence } from "@/lib/types"
 
 import {
   Dialog,
@@ -62,6 +63,11 @@ const fieldVariants: Variants = {
     y: 0,
     transition: { delay: i * 0.06, duration: 0.3, ease: "easeOut" },
   }),
+  exit: {
+    opacity: 0,
+    y: 12,
+    transition: { duration: 0.2, ease: "easeIn" },
+  },
 }
 
 // ─── Validation Schema ───────────────────────────────────────────────────
@@ -70,9 +76,9 @@ const formSchema = z.object({
   session: z.string().min(1, "Academic session is required"),
   university: z.string().min(1, "University is required"),
   academicCategory: z.string().min(1, "Academic type is required"),
-  academicUnitId: z.string().min(1, "Academic unit is required"),
+  academicUnit: z.string().min(1, "Academic unit is required"),
   residenceCategory: z.string().optional(),
-  residenceId: z.string().optional(),
+  residence: z.string().optional(),
 })
 
 type ProfileFormValues = z.infer<typeof formSchema>
@@ -81,11 +87,11 @@ type ProfileFormValues = z.infer<typeof formSchema>
 export function UpdateProfileDialog({
   user,
   children,
-  onUpdate,
+  setUser,
 }: {
   user: UserProfile | null
   children: React.ReactNode
-  onUpdate?: (updatedUser: UserProfile) => void
+  setUser?: (user: UserProfile | null) => void
 }) {
   const [open, setOpen] = useState(false)
 
@@ -106,9 +112,9 @@ export function UpdateProfileDialog({
       university: "",
       session: "",
       academicCategory: "",
-      academicUnitId: "",
+      academicUnit: "",
       residenceCategory: "",
-      residenceId: "",
+      residence: "",
     },
   })
 
@@ -187,11 +193,11 @@ export function UpdateProfileDialog({
       university: matchedUniversity,
       session: details?.academicSession || "",
       academicCategory: details?.academicUnit?.type || "",
-      academicUnitId: details?.academicUnit
+      academicUnit: details?.academicUnit
         ? `${details.academicUnit.type}:${details.academicUnit.id}:${details.academicUnit.name}`
         : "",
       residenceCategory: details?.residence?.type || "",
-      residenceId: details?.residence
+      residence: details?.residence
         ? `${details.residence.type}:${details.residence.id}:${details.residence.name}`
         : "",
     })
@@ -223,43 +229,25 @@ export function UpdateProfileDialog({
     fetchLocations()
   }, [watchUniversity])
 
-  // ─── Reset categories if not available in fetched locations ───────────
-  useEffect(() => {
-    if (!loadingLocations && watchUniversity) {
-      const currentCategory = form.getValues("academicCategory")
-      const currentResCategory = form.getValues("residenceCategory")
 
-      const hasAcademic = locationsList.some((loc) => loc.type === currentCategory)
-      const hasResidence = locationsList.some((loc) => loc.type === currentResCategory)
-
-      if (!hasAcademic) {
-        form.setValue("academicCategory", "")
-        form.setValue("academicUnitId", "")
-      }
-      if (!hasResidence) {
-        form.setValue("residenceCategory", "")
-        form.setValue("residenceId", "")
-      }
-    }
-  }, [locationsList, loadingLocations, watchUniversity, form])
 
   // ─── Handlers ─────────────────────────────────────────────────────────
   const handleUniversityChange = (val: string) => {
     form.setValue("university", val, { shouldValidate: true })
     form.setValue("academicCategory", "")
-    form.setValue("academicUnitId", "")
+    form.setValue("academicUnit", "")
     form.setValue("residenceCategory", "")
-    form.setValue("residenceId", "")
+    form.setValue("residence", "")
   }
 
   const handleAcademicCategoryChange = (val: string) => {
     form.setValue("academicCategory", val, { shouldValidate: true })
-    form.setValue("academicUnitId", "")
+    form.setValue("academicUnit", "")
   }
 
   const handleResidenceCategoryChange = (val: string) => {
     form.setValue("residenceCategory", val, { shouldValidate: true })
-    form.setValue("residenceId", "")
+    form.setValue("residence", "")
   }
 
   // ─── Handle save ─────────────────────────────────────────────────────
@@ -270,8 +258,8 @@ export function UpdateProfileDialog({
         form.setError("residenceCategory", { type: "manual", message: "Residence type is required" })
         return
       }
-      if (!data.residenceId) {
-        form.setError("residenceId", { type: "manual", message: "Residence is required" })
+      if (!data.residence) {
+        form.setError("residence", { type: "manual", message: "Residence is required" })
         return
       }
     }
@@ -281,15 +269,40 @@ export function UpdateProfileDialog({
       const res = await updateProfile({
         name: data.name,
         university: data.university,
-        academicUnit: data.academicUnitId,
-        residence: data.residenceId || "",
+        academicUnit: data.academicUnit,
+        residence: data.residence || "",
         session: data.session,
       })
 
       if (res.success) {
         toast.success("Profile updated successfully")
-        if (onUpdate && res.data) {
-          onUpdate(res.data)
+        if (setUser && user) {
+          const [uniId, uniName] = data.university.split(":")
+          const [academicType, academicId, academicName] = data.academicUnit.split(":")
+          const [residenceType, residence, residenceName] = (data.residence || "::").split(":")
+
+          const updatedUser: UserProfile = {
+            ...user,
+            name: data.name.trim(),
+            isProfileComplete: true,
+            studentDetails: {
+              university: { id: uniId, name: uniName },
+              academicSession: data.session,
+              academicUnit: {
+                type: academicType as AcademicUnit["type"],
+                id: academicId,
+                name: academicName,
+              },
+              residence: data.residence
+                ? {
+                    type: residenceType as Residence["type"],
+                    id: residence,
+                    name: residenceName,
+                  }
+                : null,
+            },
+          }
+          setUser(updatedUser)
         }
         setOpen(false)
       } else {
@@ -331,8 +344,7 @@ export function UpdateProfileDialog({
 
         {/* ── Form Fields ──────────────────────────────────────────── */}
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 py-2">
-          <AnimatePresence mode="wait">
-            {/* 1. Name */}
+          {/* 1. Name */}
             <motion.div
               key="name"
               custom={0}
@@ -426,7 +438,10 @@ export function UpdateProfileDialog({
                     ) : (
                       <Select
                         value={field.value}
-                        onValueChange={handleUniversityChange}
+                        onValueChange={(val) => {
+                          field.onChange(val)
+                          handleUniversityChange(val)
+                        }}
                       >
                         <SelectTrigger id={field.name} aria-invalid={fieldState.invalid}>
                           <SelectValue placeholder="Select university" />
@@ -475,7 +490,10 @@ export function UpdateProfileDialog({
                         render={({ field }) => (
                           <Select
                             value={field.value}
-                            onValueChange={handleAcademicCategoryChange}
+                            onValueChange={(val) => {
+                              field.onChange(val)
+                              handleAcademicCategoryChange(val)
+                            }}
                             disabled={!watchUniversity}
                           >
                             <SelectTrigger className="border-0 bg-transparent backdrop-blur-none rounded-none shadow-none focus:ring-0 focus:ring-transparent focus:bg-transparent focus:border-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:outline-none h-11 w-full">
@@ -501,7 +519,7 @@ export function UpdateProfileDialog({
                     {/* Specific location selector */}
                     <div className="flex-1 min-w-0 sm:flex-[3_3_0%]">
                       <Controller
-                        name="academicUnitId"
+                        name="academicUnit"
                         control={form.control}
                         render={({ field }) => (
                           <Select
@@ -545,21 +563,23 @@ export function UpdateProfileDialog({
                 {form.formState.errors.academicCategory && (
                   <FieldError errors={[form.formState.errors.academicCategory]} className="font-mono text-[10px] uppercase tracking-widest text-destructive mt-1" />
                 )}
-                {form.formState.errors.academicUnitId && (
-                  <FieldError errors={[form.formState.errors.academicUnitId]} className="font-mono text-[10px] uppercase tracking-widest text-destructive mt-1" />
+                {form.formState.errors.academicUnit && (
+                  <FieldError errors={[form.formState.errors.academicUnit]} className="font-mono text-[10px] uppercase tracking-widest text-destructive mt-1" />
                 )}
               </Field>
             </motion.div>
 
             {/* 5. Residence — Merged Field (Category + Specific) */}
-            {hasResidenceOptions && (
-              <motion.div
-                key="residence"
-                custom={4}
-                variants={fieldVariants}
-                initial="hidden"
-                animate="visible"
-              >
+            <AnimatePresence>
+              {hasResidenceOptions && (
+                <motion.div
+                  key="residence"
+                  custom={4}
+                  variants={fieldVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                >
                 <Field>
                   <FieldLabel className="text-[10px] text-secondary uppercase font-mono tracking-widest">
                     Residence
@@ -579,7 +599,10 @@ export function UpdateProfileDialog({
                           render={({ field }) => (
                             <Select
                               value={field.value}
-                              onValueChange={handleResidenceCategoryChange}
+                              onValueChange={(val) => {
+                                field.onChange(val)
+                                handleResidenceCategoryChange(val)
+                              }}
                               disabled={!watchUniversity}
                             >
                               <SelectTrigger className="border-0 bg-transparent backdrop-blur-none rounded-none shadow-none focus:ring-0 focus:ring-transparent focus:bg-transparent focus:border-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:outline-none h-11 w-full">
@@ -605,7 +628,7 @@ export function UpdateProfileDialog({
                       {/* Specific location selector */}
                       <div className="flex-1 min-w-0 sm:flex-[3_3_0%]">
                         <Controller
-                          name="residenceId"
+                          name="residence"
                           control={form.control}
                           render={({ field }) => (
                             <Select
@@ -649,13 +672,13 @@ export function UpdateProfileDialog({
                   {form.formState.errors.residenceCategory && (
                     <FieldError errors={[form.formState.errors.residenceCategory]} className="font-mono text-[10px] uppercase tracking-widest text-destructive mt-1" />
                   )}
-                  {form.formState.errors.residenceId && (
-                    <FieldError errors={[form.formState.errors.residenceId]} className="font-mono text-[10px] uppercase tracking-widest text-destructive mt-1" />
+                  {form.formState.errors.residence && (
+                    <FieldError errors={[form.formState.errors.residence]} className="font-mono text-[10px] uppercase tracking-widest text-destructive mt-1" />
                   )}
                 </Field>
               </motion.div>
             )}
-          </AnimatePresence>
+            </AnimatePresence>
 
           {/* ── Footer ───────────────────────────────────────────────── */}
           <DialogFooter className="bg-transparent border-white/[0.06] mt-6 pt-4 border-t">

@@ -78,7 +78,7 @@ export default function ProfilePage() {
             <ProfileResidenceCard user={user} />
           </div>
 
-          <ProfileAccessControlCard user={user} onUpdate={(updatedUser) => setUser(updatedUser)} />
+          <ProfileAccessControlCard user={user} setUser={setUser} />
         </div>
 
       </div>

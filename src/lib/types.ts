@@ -53,7 +53,7 @@ export interface StudentDetails {
   university: University;
   academicSession: string;
   academicUnit: AcademicUnit
-  residence: Residence
+  residence: Residence | null
 }
 
 export interface User {

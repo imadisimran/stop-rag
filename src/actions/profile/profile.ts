@@ -19,7 +19,7 @@ export const getProfile = async (): Promise<ServerReturn<UserProfile>> => {
         if (!user) {
             return { success: false, message: "Profile not found" }
         }
-        return { success: true, data: { ...user, email: decryptData(user.email), name: decryptData(user.name),  } }
+        return { success: true, data: { ...user, email: decryptData(user.email), name: decryptData(user.name) } }
     }
     catch (e) {
         console.log(e)
@@ -39,7 +39,7 @@ export interface UpdateProfileInput {
 
 export const updateProfile = async (
     data: UpdateProfileInput
-): Promise<ServerReturn<UserProfile>> => {
+): Promise<ServerReturn> => {
     const session = await getServerSession(authOptions)
     if (!session?.user?.userId) {
         return { success: false, message: "Unauthorized User" }
@@ -75,19 +75,9 @@ export const updateProfile = async (
         return { success: false, message: "Academic session is required" }
     }
 
-    if (!residence || !residence.trim()) {
-        return { success: false, message: "Residence is required" }
-    }
-
-    const residenceParts = residence.split(":")
-    if (residenceParts.length !== 3) {
-        return { success: false, message: "Invalid residence format" }
-    }
-
     try {
         const [uniId, uniName] = uniParts
         const [academicType, academicId, academicName] = academicUnitParts
-        const [residenceType, residenceId, residenceName] = residenceParts
 
         const academicUnitData = {
             type: academicType,
@@ -95,11 +85,31 @@ export const updateProfile = async (
             name: academicName
         } as AcademicUnit
 
-        const residenceData = {
-            type: residenceType,
-            id: residenceId,
-            name: residenceName
-        } as Residence
+        // Check if university has residence options (HALL or HOSTEL)
+        const uniCollection = await dbConnect("universities")
+        const universityDoc = await uniCollection.findOne({ id: uniId })
+        const locations = (universityDoc?.locations || []) as any[]
+        const hasResidence = locations.some(loc => loc.type === "HALL" || loc.type === "HOSTEL")
+
+        let residenceData: Residence | null = null
+
+        if (hasResidence) {
+            if (!residence || !residence.trim()) {
+                return { success: false, message: "Residence is required" }
+            }
+
+            const residenceParts = residence.split(":")
+            if (residenceParts.length !== 3) {
+                return { success: false, message: "Invalid residence format" }
+            }
+
+            const [residenceType, residenceId, residenceName] = residenceParts
+            residenceData = {
+                type: residenceType,
+                id: residenceId,
+                name: residenceName
+            } as Residence
+        }
 
         const universityData = { name: uniName, id: uniId } as University
 

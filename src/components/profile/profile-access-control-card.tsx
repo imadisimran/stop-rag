@@ -9,10 +9,10 @@ import { UpdateProfileDialog } from "@/components/profile/update-profile-dialog"
 
 export function ProfileAccessControlCard({
   user,
-  onUpdate,
+  setUser,
 }: {
   user: UserProfile | null
-  onUpdate?: (updatedUser: UserProfile) => void
+  setUser?: (user: UserProfile | null) => void
 }) {
   const handleAction = (actionName: string) => {
     toast.error(`Access Denied: ${actionName} requires root administrator credentials.`, {
@@ -41,7 +41,7 @@ export function ProfileAccessControlCard({
         </div>
 
         <div className="w-full lg:w-auto">
-          <UpdateProfileDialog user={user} onUpdate={onUpdate}>
+          <UpdateProfileDialog user={user} setUser={setUser}>
             <Button 
               className="w-full sm:w-auto px-5 py-2.5 bg-primary text-white rounded-lg font-bold text-[11px] uppercase tracking-widest hover:brightness-110 transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
