@@ -9,10 +9,12 @@ export function ProfileUniversityCard({ user }: { user: UserProfile | null }) {
   const progressBarRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
+  const targetProgress = user?.isProfileComplete ? 100 : 75
+
   useGSAP(() => {
     // Animate progress bar width
     gsap.to(progressBarRef.current, {
-      width: "75%",
+      width: `${targetProgress}%`,
       duration: 1.5,
       ease: "power3.out",
       delay: 0.2
@@ -21,7 +23,7 @@ export function ProfileUniversityCard({ user }: { user: UserProfile | null }) {
     // Animate numeric tick-up counter
     const countObj = { val: 0 }
     gsap.to(countObj, {
-      val: 75,
+      val: targetProgress,
       duration: 1.5,
       ease: "power3.out",
       delay: 0.2,
@@ -29,7 +31,7 @@ export function ProfileUniversityCard({ user }: { user: UserProfile | null }) {
         setCount(Math.floor(countObj.val))
       }
     })
-  }, { scope: containerRef })
+  }, { scope: containerRef, dependencies: [targetProgress] })
 
   return (
     <motion.div
