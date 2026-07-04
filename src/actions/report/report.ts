@@ -2,7 +2,7 @@
 
 import { authOptions } from "@/lib/auth"
 import { dbConnect } from "@/lib/dbConnect"
-import { FrontendIncidentPayload, Report, ReportFilters, ServerReturn, UserReportCardData } from "@/types"
+import { FrontendIncidentPayload, Report, ReportFilters, ServerReturn, UserReportCardData, PublicReportCardData, PublicReportFilters } from "@/types"
 import { getServerSession } from "next-auth"
 import { generateUniqueId } from "@/lib/utils"
 
@@ -174,3 +174,84 @@ export const getUserReports = async (filters: ReportFilters = {}): Promise<Serve
         return { success: false, message: "Failed to fetch reports" }
     }
 }
+
+export const getPublicReports = async (
+    filters: PublicReportFilters = {}
+): Promise<ServerReturn<{ reports: PublicReportCardData[]; hasMore: boolean }>> => {
+    try {
+        const {
+            searchQuery = "",
+            statusFilter = "All",
+            severityFilter = "All",
+            dateSort = "newest",
+            page = 1,
+            limit = 6
+        } = filters
+
+        const query: any = {}
+
+        // Status mapping
+        if (statusFilter && statusFilter !== "All") {
+            query.status = statusFilter.toUpperCase()
+        } else {
+            // Default to only showing ACCEPTED reports on the public route if status filter is "All" or not provided
+            query.status = "ACCEPTED"
+        }
+
+        // Severity mapping
+        if (severityFilter && severityFilter !== "All") {
+            query.detectedSeverity = severityFilter.toUpperCase()
+        }
+
+        // Search query
+        if (searchQuery) {
+            query.$or = [
+                { sanitizedTitle: { $regex: searchQuery, $options: "i" } },
+                { sanitizedDescription: { $regex: searchQuery, $options: "i" } },
+                { postId: { $regex: searchQuery, $options: "i" } }
+            ]
+        }
+
+        const sortDir = dateSort === "oldest" ? 1 : -1
+        const skipCount = (page - 1) * limit
+
+        const collection = await dbConnect("incidents")
+        const reports = await collection.find(query).project({
+            postId: 1,
+            createdAt: 1,
+            sanitizedTitle: 1,
+            sanitizedDescription: 1,
+            detectedSeverity: 1,
+            location: 1,
+            proofUrls: 1,
+            status: 1,
+            incidentType: 1,
+            upVotesCount: 1,
+            _id: 0
+        }).sort({ createdAt: sortDir }).skip(skipCount).limit(limit + 1).toArray()
+
+        const hasMore = reports.length > limit
+        const paginatedReports = hasMore ? reports.slice(0, limit) : reports
+
+        const mappedReports = paginatedReports.map((report) => ({
+            postId: report.postId || "",
+            createdAt: report.createdAt || new Date(),
+            title: report.sanitizedTitle || "Unknown Incident",
+            description: report.sanitizedDescription || "No description available",
+            status: report.status || "ACCEPTED",
+            severity: report.detectedSeverity || "LOW",
+            location: report.location?.name || "Unknown Location",
+            thumbnailUrl: report.proofUrls?.[0]?.secureUrl || null,
+            likes: report.upVotesCount || 0,
+            comments: 0,
+            incidentType: report.incidentType || "N/A"
+        } as PublicReportCardData))
+
+        return { success: true, message: "Public reports fetched successfully", data: { reports: mappedReports, hasMore } }
+    } catch (error) {
+        console.error("Error in getPublicReports:", error)
+        return { success: false, message: "Failed to fetch public reports" }
+    }
+}
+
+

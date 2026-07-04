@@ -87,3 +87,27 @@ export interface ReportFilters {
   page?: number;
   limit?: number;
 }
+
+export interface PublicReportCardData {
+  postId: string;
+  createdAt: Date;
+  title: string;
+  description: string;
+  status: ReportStatus;
+  severity: ReportSeverity;
+  location: string;
+  thumbnailUrl: string | null;
+  likes: number;
+  comments: number;
+  incidentType: string;
+}
+
+export interface PublicReportFilters {
+  searchQuery?: string;
+  statusFilter?: string;
+  severityFilter?: string;
+  dateSort?: string;
+  page?: number;
+  limit?: number;
+}
+

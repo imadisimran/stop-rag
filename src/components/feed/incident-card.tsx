@@ -17,13 +17,15 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+import type { ReportStatus } from "@/types";
+
 interface IncidentCardProps {
   title: string;
   date: string;
   time: string;
   location: string;
   incidentId: string;
-  status: "reviewing" | "resolved" | "pending" | "escalated" | "urgent";
+  status: ReportStatus;
   thumbnailUrl?: string;
   thumbnailLabel: string;
   description: string;
@@ -31,33 +33,39 @@ interface IncidentCardProps {
   likes: number;
 }
 
-const statusConfig = {
-  urgent: {
-    label: "URGENT",
-    className:
-      "border-rose-500/40 text-rose-300 bg-rose-500/10 shadow-[0_0_20px_rgba(244,63,94,0.3),inset_0_0_12px_rgba(244,63,94,0.15)]",
-  },
-  reviewing: {
-    label: "REVIEWING",
-    className:
-      "border-amber-500/40 text-amber-300 bg-amber-500/10 shadow-[0_0_20px_rgba(245,158,11,0.3),inset_0_0_12px_rgba(245,158,11,0.15)]",
-  },
-  resolved: {
-    label: "RESOLVED",
-    className:
-      "border-emerald-500/40 text-emerald-300 bg-emerald-500/10 shadow-[0_0_20px_rgba(16,185,129,0.3),inset_0_0_12px_rgba(16,185,129,0.15)]",
-  },
-  pending: {
+const statusConfig: Record<ReportStatus, { label: string; className: string }> = {
+  PENDING: {
     label: "PENDING",
     className:
       "border-sky-500/40 text-sky-300 bg-sky-500/10 shadow-[0_0_20px_rgba(14,165,233,0.3),inset_0_0_12px_rgba(14,165,233,0.15)]",
   },
-  escalated: {
-    label: "ESCALATED",
+  PROCESSING: {
+    label: "PROCESSING",
+    className:
+      "border-amber-500/40 text-amber-300 bg-amber-500/10 shadow-[0_0_20px_rgba(245,158,11,0.3),inset_0_0_12px_rgba(245,158,11,0.15)]",
+  },
+  QUEUED: {
+    label: "QUEUED",
+    className:
+      "border-amber-500/40 text-amber-300 bg-amber-500/10 shadow-[0_0_20px_rgba(245,158,11,0.3),inset_0_0_12px_rgba(245,158,11,0.15)]",
+  },
+  ACCEPTED: {
+    label: "ACCEPTED",
+    className:
+      "border-emerald-500/40 text-emerald-300 bg-emerald-500/10 shadow-[0_0_20px_rgba(16,185,129,0.3),inset_0_0_12px_rgba(16,185,129,0.15)]",
+  },
+  REJECTED: {
+    label: "REJECTED",
     className:
       "border-rose-500/40 text-rose-300 bg-rose-500/10 shadow-[0_0_20px_rgba(244,63,94,0.3),inset_0_0_12px_rgba(244,63,94,0.15)]",
   },
+  APPEALED: {
+    label: "APPEALED",
+    className:
+      "border-purple-500/40 text-purple-300 bg-purple-500/10 shadow-[0_0_20px_rgba(168,85,247,0.3),inset_0_0_12px_rgba(168,85,247,0.15)]",
+  },
 };
+
 
 const getIncidentIcon = (title: string) => {
   const lower = title.toLowerCase();
@@ -104,7 +112,7 @@ export function IncidentCard({
     cardRef.current.style.setProperty("--mouse-y", `${y}px`);
   };
 
-  const currentStatus = statusConfig[status] || statusConfig.reviewing;
+  const currentStatus = statusConfig[status] || statusConfig.PENDING;
   const showPlaceholder = !thumbnailUrl || imageError;
 
   return (
@@ -127,7 +135,7 @@ export function IncidentCard({
                 {/* Ambient background glow */}
                 <div className={cn(
                   "absolute w-24 h-24 rounded-full filter blur-xl opacity-20 animate-pulse",
-                  status === "urgent" || status === "escalated" ? "bg-destructive/30" : "bg-secondary/20"
+                  status === "REJECTED" ? "bg-destructive/30" : "bg-secondary/20"
                 )} />
                 <div className="relative z-10 p-4 rounded-full bg-white/[0.04] border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] group-hover:scale-110 transition-transform duration-300">
                   {getIncidentIcon(title)}
