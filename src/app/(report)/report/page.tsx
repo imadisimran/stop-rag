@@ -1,8 +1,23 @@
 import { ReportHeader } from "@/components/report/report-header"
 import { ReportForm } from "@/components/report/report-form"
 import { ReportSidebar } from "@/components/report/report-sidebar"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
+import { ProfileIncompleteWarning } from "@/components/profile/profile-incomplete-warning"
 
-export default function ReportIncidentPage() {
+export default async function ReportIncidentPage() {
+  const session = await getServerSession(authOptions)
+  const isProfileComplete = session?.user?.isProfileComplete
+
+  if (isProfileComplete === false) {
+    return (
+      <div className="mx-auto max-w-[1200px]">
+        <ReportHeader />
+        <ProfileIncompleteWarning />
+      </div>
+    )
+  }
+
   return (
     <div className="mx-auto max-w-[1200px]">
       {/* Form column */}
@@ -22,3 +37,4 @@ export default function ReportIncidentPage() {
     </div>
   )
 }
+

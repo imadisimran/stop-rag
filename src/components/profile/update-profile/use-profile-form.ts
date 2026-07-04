@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
+import { useSession } from "next-auth/react"
 
 import { updateProfile } from "@/actions/profile/profile"
 import { getUniversities, getLocations } from "@/actions/universityInfo/university"
@@ -20,6 +21,8 @@ export function useProfileForm({
   open: boolean
   setOpen: (open: boolean) => void
 }) {
+  const { update } = useSession()
+
   // Data from server
   const [universitiesList, setUniversitiesList] = useState<{ id: string; name: string }[]>([])
   const [locationsList, setLocationsList] = useState<Location[]>([])
@@ -206,6 +209,9 @@ export function useProfileForm({
 
       if (res.success) {
         toast.success("Profile updated successfully")
+        // Update next-auth session token
+        await update({ isProfileComplete: true, name: data.name })
+
         if (setUser && user) {
           const [uniId, uniName] = data.university.split(":")
           const [academicType, academicId, academicName] = data.academicUnit.split(":")

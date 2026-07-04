@@ -44,7 +44,7 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account, profile, email, credentials }) {
       return true
     },
-    async jwt({ token, user, account, profile }) {
+    async jwt({ token, user, account, profile, trigger, session }) {
       if (user) {
         if (account?.provider === "credentials") {
           token.role = user.role
@@ -65,6 +65,16 @@ export const authOptions: NextAuthOptions = {
           }
         }
       }
+
+      if (trigger === "update" && session) {
+        if (session.isProfileComplete !== undefined) {
+          token.isProfileComplete = session.isProfileComplete
+        }
+        if (session.name !== undefined) {
+          token.name = session.name
+        }
+      }
+
       return token
     },
     async session({ session, token }) {
