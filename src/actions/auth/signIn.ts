@@ -1,8 +1,8 @@
 "use server"
 
 import { dbConnect } from "@/lib/dbConnect";
-import { encryptData, generateBlindIndex } from "@/lib/encryption";
-import { ServerReturn, SessionData, User } from "@/lib/types";
+import { decryptData, encryptData, generateBlindIndex } from "@/lib/encryption";
+import { ServerReturn, SessionData, User } from "@/types";
 import bcrypt from "bcryptjs";
 import { generateUniqueId } from "@/lib/utils";
 
@@ -32,7 +32,7 @@ export const signInUser = async (data: SignInData): Promise<ServerReturn<Session
         }
 
         const SessionData: SessionData = {
-            name: user.name,
+            name: decryptData(user.name),
             role: user.role,
             userId: user.userId,
             provider: user.provider,

@@ -4,7 +4,7 @@ import { motion } from "framer-motion"
 import { FiThumbsUp, FiMessageCircle, FiClock, FiMapPin } from "react-icons/fi"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import type { Incident } from "@/lib/types"
+import type { Incident } from "@/types"
 import { cn } from "@/lib/utils"
 
 interface IncidentCardProps {

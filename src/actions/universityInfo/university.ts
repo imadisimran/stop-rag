@@ -1,26 +1,15 @@
 "use server"
 
 import { dbConnect } from "@/lib/dbConnect"
-import { ServerReturn } from "@/lib/types"
+import { ServerReturn, University, Location } from "@/types"
 
-interface Universities {
-    name: string;
-    id: string;
-}
-
-export interface Location {
-    id: string;
-    name: string;
-    type:string
-}
-
-export const getUniversities = async (): Promise<ServerReturn<Universities[]>> => {
+export const getUniversities = async (): Promise<ServerReturn<University[]>> => {
     try {
         const uniCollection = await dbConnect("universities")
         const universities = await uniCollection.find({})
             .project({ name: 1, id: 1, _id: 0 })
             .sort({ name: 1 })
-            .toArray() as Universities[]
+            .toArray() as University[]
         return { success: true, data: universities }
     } catch (error: any) {
         return { success: false, error: error.message || "Something went wrong fetching universities" }

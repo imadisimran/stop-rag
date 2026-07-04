@@ -2,8 +2,7 @@
 
 import { authOptions } from "@/lib/auth"
 import { dbConnect } from "@/lib/dbConnect"
-import { FrontendIncidentPayload, Report, ReportStudentInfo } from "@/lib/reportTypes"
-import { ServerReturn } from "@/lib/types"
+import { FrontendIncidentPayload, Report, ServerReturn } from "@/types"
 import { getServerSession } from "next-auth"
 import { generateUniqueId } from "@/lib/utils"
 
@@ -23,9 +22,9 @@ export const postReport = async (
 
     try {
 
-        const userData=await dbConnect("users")
-        const user = await userData.findOne({userId:session.user.userId},{projection:{emailHash:1,university:1}})
-        if(!user){
+        const userData = await dbConnect("users")
+        const user = await userData.findOne({ userId: session.user.userId }, { projection: { emailHash: 1, studentDetails: 1 } })
+        if (!user) {
             return { success: false, message: "User not found" }
         }
         const postId = generateUniqueId(14)
@@ -49,15 +48,18 @@ export const postReport = async (
             proofUrls,
             createdAt: new Date(),
             status: "PENDING",
-            student:{
-                emailHash:user.emailHash || "",
-                userId:session.user.userId || "",
-                university:user.university as ReportStudentInfo["university"],
+            student: {
+                emailHash: user.emailHash || "",
+                userId: session.user.userId || "",
+                university: user.studentDetails.university,
+                academicUnit: user.studentDetails.academicUnit,
+                residence: user.studentDetails.residence,
+                academicSession: user.studentDetails.academicSession,
             },
-            upVotesBy:[],
-            upVotesCount:0,
-            adminVerification:null
-            
+            upVotesBy: [],
+            upVotesCount: 0,
+            adminVerification: null
+
         }
 
         const collection = await dbConnect("incidents")

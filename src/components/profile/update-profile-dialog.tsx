@@ -5,7 +5,7 @@ import { motion } from "framer-motion"
 import { FiEdit3, FiLoader } from "react-icons/fi"
 import { Controller } from "react-hook-form"
 
-import { UserProfile } from "@/actions/profile/profile"
+import { UserProfile } from "@/types"
 
 import {
   Dialog,

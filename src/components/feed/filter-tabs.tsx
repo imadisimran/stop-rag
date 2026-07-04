@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
-import type { FilterType } from "@/lib/types"
+import type { FilterType } from "@/types"
 import { FiSearch } from "react-icons/fi"
 
 const filters: FilterType[] = ["All", "Recent", "Damage", "Urgent"]

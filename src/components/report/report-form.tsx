@@ -20,9 +20,10 @@ import { format } from "date-fns"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { postReport } from "@/actions/report/report"
-import { getUniversities, getLocations, type Location } from "@/actions/universityInfo/university"
+import { getUniversities, getLocations } from "@/actions/universityInfo/university"
+import { Location } from "@/types"
 import { uploadToCloudinary } from "@/lib/cloudinary"
-import { FrontendIncidentPayload, ProofUrl } from "@/lib/reportTypes"
+import { FrontendIncidentPayload, ProofUrl } from "@/types"
 import { cn } from "@/lib/utils"
 
 

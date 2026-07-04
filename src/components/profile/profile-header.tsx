@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion"
 import { FiTerminal } from "react-icons/fi"
-import { UserProfile } from "@/actions/profile/profile"
+import { UserProfile } from "@/types"
 
 export function ProfileHeader({user}:{user:UserProfile | null}) {
   return (

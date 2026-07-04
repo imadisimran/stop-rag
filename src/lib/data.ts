@@ -1,4 +1,4 @@
-import type { Incident } from "./types"
+import type { Incident } from "@/types"
 
 export const incidents: Incident[] = [
   {

@@ -3,9 +3,10 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 
-import { UserProfile, updateProfile } from "@/actions/profile/profile"
-import { getUniversities, getLocations, Location } from "@/actions/universityInfo/university"
-import { AcademicUnit, Residence } from "@/lib/types"
+import { updateProfile } from "@/actions/profile/profile"
+import { getUniversities, getLocations } from "@/actions/universityInfo/university"
+import { UserProfile, Location } from "@/types"
+import { AcademicUnit, Residence } from "@/types"
 import { formSchema, ProfileFormValues, ACADEMIC_CATEGORIES, RESIDENCE_CATEGORIES } from "./schema"
 
 export function useProfileForm({

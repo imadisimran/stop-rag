@@ -3,10 +3,8 @@
 import { authOptions } from "@/lib/auth"
 import { dbConnect } from "@/lib/dbConnect"
 import { decryptData, encryptData, generateBlindIndex } from "@/lib/encryption"
-import { AcademicUnit, Residence, ServerReturn, StudentDetails, University, User } from "@/lib/types"
+import { AcademicUnit, Residence, ServerReturn, StudentDetails, University, User, UserProfile, UpdateProfileInput } from "@/types"
 import { getServerSession } from "next-auth"
-
-export type UserProfile = Omit<User, "password" | "emailHash">
 
 export const getProfile = async (): Promise<ServerReturn<UserProfile>> => {
     const session = await getServerSession(authOptions)
@@ -28,14 +26,6 @@ export const getProfile = async (): Promise<ServerReturn<UserProfile>> => {
 
 }
 
-
-export interface UpdateProfileInput {
-    name: string
-    university: string
-    academicUnit: string
-    residence: string
-    session: string
-}
 
 export const updateProfile = async (
     data: UpdateProfileInput

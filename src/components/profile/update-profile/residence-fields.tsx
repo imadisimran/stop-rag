@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { ProfileFormValues, fieldVariants } from "./schema"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Field, FieldLabel, FieldError } from "@/components/ui/field"
-import { Location } from "@/actions/universityInfo/university"
+import { Location } from "@/types"
 
 interface ResidenceFieldsProps {
   form: UseFormReturn<ProfileFormValues>

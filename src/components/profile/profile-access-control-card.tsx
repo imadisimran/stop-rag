@@ -4,7 +4,7 @@ import { motion } from "framer-motion"
 import { FiShield, FiEdit3, FiKey, FiTrash2, FiInfo, FiAlertTriangle } from "react-icons/fi"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { UserProfile } from "@/actions/profile/profile"
+import { UserProfile } from "@/types"
 import { UpdateProfileDialog } from "@/components/profile/update-profile-dialog"
 import { ChangePasswordDialog } from "@/components/profile/change-password-dialog"
 

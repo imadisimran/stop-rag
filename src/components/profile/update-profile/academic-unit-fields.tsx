@@ -3,7 +3,7 @@ import { FiLoader } from "react-icons/fi"
 import { ProfileFormValues } from "./schema"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Field, FieldLabel, FieldError } from "@/components/ui/field"
-import { Location } from "@/actions/universityInfo/university"
+import { Location } from "@/types"
 
 interface AcademicUnitFieldsProps {
   form: UseFormReturn<ProfileFormValues>

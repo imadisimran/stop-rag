@@ -1,4 +1,4 @@
-import { UserProfile } from "@/actions/profile/profile"
+import { UserProfile } from "@/types"
 import { motion } from "framer-motion"
 
 export function ProfileResidenceCard({ user }: { user: UserProfile | null }) {

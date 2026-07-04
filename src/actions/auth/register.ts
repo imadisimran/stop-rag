@@ -2,7 +2,7 @@
 
 import { dbConnect } from "@/lib/dbConnect";
 import { encryptData, generateBlindIndex } from "@/lib/encryption";
-import { ServerReturn, User } from "@/lib/types";
+import { ServerReturn, User } from "@/types";
 import bcrypt from "bcryptjs";
 import { generateUniqueId } from "@/lib/utils";
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { UserProfile } from "@/actions/profile/profile"
+import { UserProfile } from "@/types"
 import { motion } from "framer-motion"
 import { FaFingerprint } from "react-icons/fa"
 

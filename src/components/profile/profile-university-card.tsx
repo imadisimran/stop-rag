@@ -1,4 +1,4 @@
-import { UserProfile } from "@/actions/profile/profile"
+import { UserProfile } from "@/types"
 import { useState, useRef } from "react"
 import { motion } from "framer-motion"
 import gsap from "gsap"

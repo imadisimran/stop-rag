@@ -2,7 +2,7 @@
 
 import { authOptions } from "@/lib/auth"
 import { dbConnect } from "@/lib/dbConnect"
-import { ServerReturn, User } from "@/lib/types"
+import { ServerReturn, User } from "@/types"
 import { getServerSession } from "next-auth"
 import bcrypt from "bcryptjs"
 import { ChangePasswordValues } from "@/components/profile/change-password-schema"

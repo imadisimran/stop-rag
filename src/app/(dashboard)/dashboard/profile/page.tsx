@@ -9,7 +9,8 @@ import { ProfileAcademicUnitCard } from "@/components/profile/profile-academic-u
 import { ProfileResidenceCard } from "@/components/profile/profile-residence-card"
 import { ProfileAccessControlCard } from "@/components/profile/profile-access-control-card"
 import { useEffect, useState } from "react"
-import { getProfile, UserProfile } from "@/actions/profile/profile"
+import { getProfile } from "@/actions/profile/profile"
+import { UserProfile } from "@/types"
 import { ProfileLoading } from "@/components/profile/profile-loading"
 import { ProfileError } from "@/components/profile/profile-error"
 
