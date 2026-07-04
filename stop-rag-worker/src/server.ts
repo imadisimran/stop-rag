@@ -15,24 +15,7 @@ const __dirname = path.dirname(__filename);
 // ==========================================
 // 1. TYPE INTERFACES
 // ==========================================
-
-interface JobData {
-    reportId: string;
-}
-
-interface ProofUrl {
-    type: string;
-    publicId: string;
-    secureUrl: string;
-}
-
-interface AiVerdict {
-    isRaggingIncident: boolean;
-    sanitizedTitle: string;
-    sanitizedDescription: string;
-    detectedSeverity: 'LOW' | 'MEDIUM' | 'HIGH';
-    rejectionReason: string | null;
-}
+import { JobData, ProofUrl, AiVerdict } from './types.js';
 
 // Helper to determine mimeType based on extension and resource type
 function getMimeType(extension: string, resourceType: string): string {
