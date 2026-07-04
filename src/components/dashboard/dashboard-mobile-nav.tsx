@@ -3,40 +3,43 @@
 import { motion } from "framer-motion"
 import { FiPlusCircle, FiHome, FiFileText, FiShield } from "react-icons/fi"
 import { cn } from "@/lib/utils"
+import { usePathname } from "next/navigation"
+import Link from "next/link"
 
 interface NavItem {
   icon: React.ComponentType<{ className?: string }>
   label: string
   href: string
-  active?: boolean
 }
 
 const leftItems: NavItem[] = [
-  { icon: FiHome, label: "Dashboard", href: "/dashboard", active: true },
-  { icon: FiFileText, label: "Reports", href: "#" },
+  { icon: FiHome, label: "Dashboard", href: "/dashboard" },
+  { icon: FiFileText, label: "Reports", href: "/dashboard/my-reports" },
 ]
 
 const rightItems: NavItem[] = [
   { icon: FiShield, label: "Safety", href: "#" },
 ]
 
-function NavButton({ item }: { item: NavItem }) {
+function NavButton({ item, isActive }: { item: NavItem; isActive: boolean }) {
   const Icon = item.icon
   return (
-    <a
+    <Link
       href={item.href}
       className={cn(
         "flex flex-col items-center justify-center gap-1 px-2 py-1 transition-colors min-w-[56px]",
-        item.active ? "text-primary" : "text-muted-foreground"
+        isActive ? "text-primary" : "text-muted-foreground"
       )}
     >
       <Icon className="text-xl" />
       <span className="text-[10px] font-medium">{item.label}</span>
-    </a>
+    </Link>
   )
 }
 
 export function DashboardMobileNav() {
+  const pathname = usePathname()
+
   return (
     <motion.nav
       initial={{ y: 100 }}
@@ -46,9 +49,10 @@ export function DashboardMobileNav() {
     >
       <div className="flex items-center justify-around h-full max-w-[1440px] mx-auto px-2">
         {/* Left items */}
-        {leftItems.map((item) => (
-          <NavButton key={item.label} item={item} />
-        ))}
+        {leftItems.map((item) => {
+          const isActive = pathname === item.href
+          return <NavButton key={item.label} item={item} isActive={isActive} />
+        })}
 
         {/* Center Report Button */}
         <motion.a
@@ -64,10 +68,12 @@ export function DashboardMobileNav() {
         </motion.a>
 
         {/* Right items */}
-        {rightItems.map((item) => (
-          <NavButton key={item.label} item={item} />
-        ))}
+        {rightItems.map((item) => {
+          const isActive = pathname === item.href
+          return <NavButton key={item.label} item={item} isActive={isActive} />
+        })}
       </div>
     </motion.nav>
   )
 }
+

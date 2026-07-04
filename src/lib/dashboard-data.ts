@@ -80,7 +80,7 @@ export const dashboardReports: DashboardReport[] = [
 export const dashboardNavItems = [
   { label: "Dashboard", href: "/dashboard", icon: "dashboard" },
   { label: "Profile", href: "/dashboard/profile", icon: "profile" },
-  { label: "My Reports", href: "#", icon: "reports" },
+  { label: "My Reports", href: "/dashboard/my-reports", icon: "reports" },
   { label: "Safety Resources", href: "#", icon: "safety" },
   { label: "Emergency", href: "#", icon: "emergency" },
 ]

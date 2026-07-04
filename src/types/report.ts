@@ -22,6 +22,8 @@ export interface ReportStudentInfo extends StudentDetails {
 
 export type ReportStatus = "PENDING" | "PROCESSING" | "ACCEPTED" | "REJECTED" | "APPEALED" | "QUEUED";
 
+export type ReportSeverity = "HIGH" | "MEDIUM" | "LOW";
+
 export interface AdminVerification {
   isAppealed: boolean;
   appealNote: string;
@@ -62,6 +64,26 @@ export interface Report {
   adminVerification: null | AdminVerification;
   sanitizedTitle?: string;
   sanitizedDescription?: string;
-  detectedSeverity?: 'LOW' | 'MEDIUM' | 'HIGH';
+  detectedSeverity?: ReportSeverity;
   rejectionReason?: string | null;
+}
+
+
+export interface UserReportCardData {
+  postId: string;
+  createdAt: Date;
+  title: string;
+  incidentType: string;
+  description: string;
+  status: ReportStatus;
+  severity: ReportSeverity;
+}
+
+export interface ReportFilters {
+  searchQuery?: string;
+  statusFilter?: string;
+  severityFilter?: string;
+  dateSort?: string;
+  page?: number;
+  limit?: number;
 }

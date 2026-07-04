@@ -42,9 +42,9 @@ export function DashboardTopbar() {
       <div className="flex justify-between items-center px-5 md:px-10 h-full w-full max-w-[1440px] mx-auto">
         {/* Logo + Title */}
         <div className="flex items-center gap-4 md:gap-6">
-          <span className="font-display text-xl md:text-2xl font-bold text-gradient">
+          <Link href="/" className="font-display text-xl md:text-2xl font-bold text-gradient">
             STOPRAG
-          </span>
+          </Link>
           <div className="h-5 w-px bg-white/10" />
           <h1 className="font-display text-lg md:text-xl font-semibold text-muted-foreground">
             Dashboard

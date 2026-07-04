@@ -2,7 +2,7 @@
 
 import { authOptions } from "@/lib/auth"
 import { dbConnect } from "@/lib/dbConnect"
-import { FrontendIncidentPayload, Report, ServerReturn } from "@/types"
+import { FrontendIncidentPayload, Report, ReportFilters, ServerReturn, UserReportCardData } from "@/types"
 import { getServerSession } from "next-auth"
 import { generateUniqueId } from "@/lib/utils"
 
@@ -84,5 +84,93 @@ export const postReport = async (
     } catch (error) {
         console.error("Error in postReport:", error)
         return { success: false, message: "Something went wrong" }
+    }
+}
+
+
+export const getUserReports = async (filters: ReportFilters = {}): Promise<ServerReturn<{ reports: UserReportCardData[], hasMore: boolean }>> => {
+    const session = await getServerSession(authOptions)
+
+    if (!session) {
+        return { success: false, message: "User must login to view reports" }
+    }
+
+    try {
+        const {
+            searchQuery = "",
+            statusFilter = "All",
+            severityFilter = "All",
+            dateSort = "newest",
+            page = 1,
+            limit = 3
+        } = filters
+
+        const query: any = { "student.userId": session.user.userId }
+
+        if (searchQuery) {
+            query.$or = [
+                { sanitizedTitle: { $regex: searchQuery, $options: "i" } },
+                { sanitizedDescription: { $regex: searchQuery, $options: "i" } },
+                { description: { $regex: searchQuery, $options: "i" } },
+                { postId: { $regex: searchQuery, $options: "i" } }
+            ]
+        }
+
+        if (statusFilter !== "All") {
+            if (statusFilter === "Accepted") {
+                query.status = "ACCEPTED"
+            } else if (statusFilter === "Rejected") {
+                query.status = "REJECTED"
+            } else if (statusFilter === "Flagged") {
+                query.status = { $in: ["FLAGGED"] }
+            } else if (statusFilter === "Appealed") {
+                query.status = "APPEALED"
+            } else if (statusFilter === "Under Review") {
+                query.status = { $in: ["PENDING", "PROCESSING", "QUEUED"] }
+            }
+        }
+
+        if (severityFilter !== "All") {
+            if (severityFilter === "Low") {
+                query.detectedSeverity = "LOW"
+            } else if (severityFilter === "Medium") {
+                query.detectedSeverity = "MEDIUM"
+            } else if (severityFilter === "High") {
+                query.detectedSeverity = "HIGH"
+            }
+        }
+
+        const sortDir = dateSort === "oldest" ? 1 : -1
+        const skipCount = (page - 1) * limit
+
+        const collection = await dbConnect("incidents")
+        const reports = await collection.find(query).project({
+            postId: 1,
+            createdAt: 1,
+            sanitizedTitle: 1,
+            incidentType: 1,
+            sanitizedDescription: 1,
+            status: 1,
+            detectedSeverity: 1,
+            _id: 0
+        }).sort({ createdAt: sortDir }).skip(skipCount).limit(limit + 1).toArray()
+
+        const hasMore = reports.length > limit
+        const paginatedReports = hasMore ? reports.slice(0, limit) : reports
+
+        const mappedReports = paginatedReports.map((report) => ({
+            title: report.sanitizedTitle || "Unknown Incident",
+            description: report.sanitizedDescription || "No description available",
+            status: report.status || "Accepted",
+            incidentType: report.incidentType || "N/A",
+            createdAt: report.createdAt || new Date(),
+            postId: report.postId || "error404",
+            severity: report.detectedSeverity || "LOW",
+        } as UserReportCardData))
+
+        return { success: true, message: "Reports fetched successfully", data: { reports: mappedReports, hasMore } }
+    } catch (error) {
+        console.error("Error in getUserReports:", error)
+        return { success: false, message: "Failed to fetch reports" }
     }
 }
