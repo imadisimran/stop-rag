@@ -58,12 +58,21 @@ export function IncidentList() {
       </div>
 
       {/* Cards Grid */}
-      <div className="grid grid-cols-1 gap-4 md:gap-6">
-        {incidents.map((incident, index) => (
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {incidents.map((incident) => (
           <IncidentCard
             key={incident.id}
-            incident={incident}
-            index={index}
+            title={incident.title}
+            date={incident.timeAgo.includes("h ago") || incident.timeAgo.includes("m ago") ? "Today" : "Recent"}
+            time={incident.timeAgo}
+            location={incident.location}
+            incidentId={incident.id}
+            status={incident.status}
+            thumbnailUrl={incident.image}
+            thumbnailLabel={incident.imageAlt || "Incident image"}
+            description={incident.description}
+            comments={incident.comments}
+            likes={incident.likes}
           />
         ))}
       </div>

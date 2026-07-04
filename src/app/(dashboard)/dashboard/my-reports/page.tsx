@@ -140,9 +140,6 @@ export default function MyReportsPage() {
           <h2 className="font-display text-3xl md:text-4xl font-bold text-gradient mt-2">
             My Reports
           </h2>
-          <p className="text-muted-foreground mt-2">
-            You have <span className="text-secondary font-bold">{reports.length}</span> active reports matching your filters.
-          </p>
         </div>
 
         {/* Layout Toggles */}
