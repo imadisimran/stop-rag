@@ -181,28 +181,26 @@ export const getPublicReports = async (
     try {
         const {
             searchQuery = "",
-            statusFilter = "All",
             severityFilter = "All",
             dateSort = "newest",
             page = 1,
             limit = 6
         } = filters
 
-        const query: any = {}
-
-        // Status mapping
-        if (statusFilter && statusFilter !== "All") {
-            query.status = statusFilter.toUpperCase()
-        } else {
-            // Default to only showing ACCEPTED reports on the public route if status filter is "All" or not provided
-            query.status = "ACCEPTED"
+        const query: any = {
+            status: "ACCEPTED"
         }
 
         // Severity mapping
         if (severityFilter && severityFilter !== "All") {
-            query.detectedSeverity = severityFilter.toUpperCase()
+            if (severityFilter === "High") {
+                query.detectedSeverity = "HIGH"
+            } else if (severityFilter === "Medium") {
+                query.detectedSeverity = "MEDIUM"
+            } else if (severityFilter === "Low") {
+                query.detectedSeverity = "LOW"
+            }
         }
-
         // Search query
         if (searchQuery) {
             query.$or = [
@@ -222,12 +220,14 @@ export const getPublicReports = async (
             sanitizedTitle: 1,
             sanitizedDescription: 1,
             detectedSeverity: 1,
-            location: 1,
+            "location.name": 1,
+            "university.name": 1,
             proofUrls: 1,
             status: 1,
             incidentType: 1,
             upVotesCount: 1,
-            _id: 0
+            "student.userId": 1,
+            _id: 0,
         }).sort({ createdAt: sortDir }).skip(skipCount).limit(limit + 1).toArray()
 
         const hasMore = reports.length > limit
@@ -237,14 +237,16 @@ export const getPublicReports = async (
             postId: report.postId || "",
             createdAt: report.createdAt || new Date(),
             title: report.sanitizedTitle || "Unknown Incident",
-            description: report.sanitizedDescription || "No description available",
+            description: report.sanitizedDescription?.length > 100 ? report.sanitizedDescription.slice(0, 100) + "..." : report.sanitizedDescription || "No description available",
             status: report.status || "ACCEPTED",
             severity: report.detectedSeverity || "LOW",
             location: report.location?.name || "Unknown Location",
             thumbnailUrl: report.proofUrls?.[0]?.secureUrl || null,
             likes: report.upVotesCount || 0,
             comments: 0,
-            incidentType: report.incidentType || "N/A"
+            incidentType: report.incidentType || "N/A",
+            userId: report.student?.userId || "",
+            university: report.university?.name || "Unknown University",
         } as PublicReportCardData))
 
         return { success: true, message: "Public reports fetched successfully", data: { reports: mappedReports, hasMore } }

@@ -33,7 +33,6 @@ export function IncidentList({ initialReports, initialHasMore }: IncidentListPro
   const [isFetchingMore, setIsFetchingMore] = useState(false)
 
   const [searchQuery, setSearchQuery] = useState("")
-  const [statusFilter, setStatusFilter] = useState("All")
   const [severityFilter, setSeverityFilter] = useState("All")
   const [dateSort, setDateSort] = useState("newest")
 
@@ -58,7 +57,6 @@ export function IncidentList({ initialReports, initialHasMore }: IncidentListPro
     const fetchReports = async () => {
       const res = await getPublicReports({
         searchQuery,
-        statusFilter,
         severityFilter,
         dateSort,
         page,
@@ -89,12 +87,12 @@ export function IncidentList({ initialReports, initialHasMore }: IncidentListPro
     }, 300)
 
     return () => clearTimeout(timeoutId)
-  }, [page, searchQuery, statusFilter, severityFilter, dateSort])
+  }, [page, searchQuery, severityFilter, dateSort])
 
   // Reset page to 1 when any filter changes
   useEffect(() => {
     setPage(1)
-  }, [searchQuery, statusFilter, severityFilter, dateSort])
+  }, [searchQuery, severityFilter, dateSort])
 
   // Intersection Observer for infinite scrolling
   const fetchStateRef = useRef({ hasMore, isLoading, isFetchingMore })
@@ -160,8 +158,6 @@ export function IncidentList({ initialReports, initialHasMore }: IncidentListPro
       <FilterTabs
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
-        statusFilter={statusFilter}
-        setStatusFilter={setStatusFilter}
         severityFilter={severityFilter}
         setSeverityFilter={setSeverityFilter}
         dateSort={dateSort}
@@ -206,30 +202,9 @@ export function IncidentList({ initialReports, initialHasMore }: IncidentListPro
 
       {/* Cards Grid */}
       {!isLoading && reports.length > 0 && (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6">
           <AnimatePresence>
-            {reports.map((incident) => {
-              const createdAtDate = new Date(incident.createdAt)
-              const timeAgo = formatDistanceToNow(createdAtDate, { addSuffix: true })
-              const formattedDate = format(createdAtDate, "MMM dd, yyyy")
-
-              return (
-                <IncidentCard
-                  key={incident.postId}
-                  title={incident.title}
-                  date={formattedDate}
-                  time={timeAgo}
-                  location={incident.location}
-                  incidentId={incident.postId}
-                  status={incident.status}
-                  thumbnailUrl={incident.thumbnailUrl || undefined}
-                  thumbnailLabel={incident.title}
-                  description={incident.description}
-                  comments={incident.comments}
-                  likes={incident.likes}
-                />
-              )
-            })}
+            {reports.map((incident) => <IncidentCard key={incident.postId} data={incident} />)}
           </AnimatePresence>
         </div>
       )}

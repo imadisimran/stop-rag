@@ -96,15 +96,16 @@ export interface PublicReportCardData {
   status: ReportStatus;
   severity: ReportSeverity;
   location: string;
+  university: string;
   thumbnailUrl: string | null;
   likes: number;
   comments: number;
   incidentType: string;
+  userId: string;
 }
 
 export interface PublicReportFilters {
   searchQuery?: string;
-  statusFilter?: string;
   severityFilter?: string;
   dateSort?: string;
   page?: number;

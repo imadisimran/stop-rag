@@ -364,7 +364,7 @@ async function recoverUnprocessedReports() {
     try {
         const db = mongoClient.db(process.env.MONGODB_DB);
         const unprocessed = await db.collection('incidents')
-            .find({ status: { $in: ["QUEUED", "PROCESSING"] } })
+            .find({ status: { $in: ["QUEUED", "PROCESSING", "PENDING"] } })
             .toArray();
 
         if (unprocessed.length > 0) {
@@ -377,7 +377,7 @@ async function recoverUnprocessedReports() {
             // Fire off processing sequence
             processNextJob();
         } else {
-            console.log("[Recovery] Clean startup. No pending 'QUEUED' or 'PROCESSING' cases found in MongoDB.");
+            console.log("[Recovery] Clean startup. No pending 'QUEUED', 'PROCESSING' or 'PENDING' cases found in MongoDB.");
         }
     } catch (err) {
         console.error("[Recovery Error] Failed loading pending records from MongoDB:", err);

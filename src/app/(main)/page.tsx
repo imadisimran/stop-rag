@@ -6,7 +6,6 @@ export default async function HomePage() {
   // Load initial page (page 1, limit 6) from MongoDB server-side for SEO
   const result = await getPublicReports({
     searchQuery: "",
-    statusFilter: "All",
     severityFilter: "All",
     dateSort: "newest",
     page: 1,

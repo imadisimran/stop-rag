@@ -13,8 +13,6 @@ import {
 interface FilterTabsProps {
   searchQuery: string
   setSearchQuery: (val: string) => void
-  statusFilter: string
-  setStatusFilter: (val: string) => void
   severityFilter: string
   setSeverityFilter: (val: string) => void
   dateSort: string
@@ -24,8 +22,6 @@ interface FilterTabsProps {
 export function FilterTabs({
   searchQuery,
   setSearchQuery,
-  statusFilter,
-  setStatusFilter,
   severityFilter,
   setSeverityFilter,
   dateSort,
@@ -52,22 +48,6 @@ export function FilterTabs({
 
       {/* Select Dropdowns */}
       <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-        {/* Status Filter */}
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-[150px] text-muted-foreground">
-            <SelectValue placeholder="Status: All" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="All">All Statuses</SelectItem>
-            <SelectItem value="Accepted">Accepted</SelectItem>
-            <SelectItem value="Pending">Pending</SelectItem>
-            <SelectItem value="Processing">Processing</SelectItem>
-            <SelectItem value="Queued">Queued</SelectItem>
-            <SelectItem value="Appealed">Appealed</SelectItem>
-            <SelectItem value="Rejected">Rejected</SelectItem>
-          </SelectContent>
-        </Select>
-
         {/* Severity Filter */}
         <Select value={severityFilter} onValueChange={setSeverityFilter}>
           <SelectTrigger className="w-full sm:w-[150px] text-muted-foreground">
