@@ -111,4 +111,45 @@ export interface PublicReportFilters {
   page?: number;
   limit?: number;
 }
+export interface IncidentDetails {
+  postId: string;
+  createdAt: Date;
+  date: Date;
+  title: string;
+  description: string;
+  incidentType: string;
+  status: string;
+  severity?: ReportSeverity;
+  university: string;
+  location: string;
+  student: {
+    userId: string;
+    academicSession: string;
+  };
+  proofUrls: ProofUrl[] | null;
+  upVotesCount: number;
+  updatedAt?: {
+    timestamp: Date;
+    status: ReportStatus;
+    verifiedBy: string;
+    adminId: string | null;
+    note: string | null;
+  }[];
+}
 
+
+export type PublicDetailsReport = Omit<
+  Report,
+  "description" | "adminVerification" | "rejectionReason" | "university" | "location" | "student" | "upVotesBy"
+> & {
+  university: {
+    name: string;
+  };
+  location: {
+    name: string;
+  };
+  student: {
+    userId: string;
+    academicSession: string;
+  };
+};

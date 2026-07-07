@@ -2,7 +2,7 @@
 
 import { authOptions } from "@/lib/auth"
 import { dbConnect } from "@/lib/dbConnect"
-import { FrontendIncidentPayload, Report, ReportFilters, ServerReturn, UserReportCardData, PublicReportCardData, PublicReportFilters } from "@/types"
+import { FrontendIncidentPayload, Report, ReportFilters, ServerReturn, UserReportCardData, PublicReportCardData, PublicReportFilters, PublicDetailsReport, IncidentDetails } from "@/types"
 import { getServerSession } from "next-auth"
 import { generateUniqueId } from "@/lib/utils"
 
@@ -256,4 +256,64 @@ export const getPublicReports = async (
     }
 }
 
+
+export const getIncidentById = async (
+    postId: string
+): Promise<ServerReturn<IncidentDetails | null>> => {
+    try {
+        const collection = await dbConnect("incidents")
+        const report = await collection.findOne(
+            { postId },
+            {
+                projection: {
+                    postId: 1,
+                    createdAt: 1,
+                    date: 1,
+                    sanitizedTitle: 1,
+                    incidentType: 1,
+                    "university.name": 1,
+                    detectedSeverity: 1,
+                    "student.userId": 1,
+                    "student.academicSession": 1,
+                    "location.name": 1,
+                    status: 1,
+                    sanitizedDescription: 1,
+                    proofUrls: 1,
+                    upVotesCount: 1,
+                    updatedAt: 1,
+                    _id: 0,
+                },
+            }
+        ) as PublicDetailsReport | null
+
+        if (!report) {
+            return { success: false, message: "Incident not found", data: null }
+        }
+
+        const mappedIncident: IncidentDetails = {
+            postId: report.postId || "",
+            createdAt: report.createdAt || new Date(),
+            date: report.date || new Date(),
+            title: report.sanitizedTitle || "Title Unavailable",
+            description: report.sanitizedDescription || "Description Unavailable",
+            incidentType: report.incidentType || "N/A",
+            status: report.status || "PENDING",
+            severity: report.detectedSeverity,
+            university: report.university?.name || "Unknown University",
+            location: report.location?.name || "Unknown Location",
+            student: {
+                userId: report.student?.userId || "",
+                academicSession: report.student?.academicSession || "N/A",
+            },
+            proofUrls: report.proofUrls || null,
+            upVotesCount: report.upVotesCount || 0,
+            updatedAt: report.updatedAt,
+        }
+
+        return { success: true, message: "Incident fetched successfully", data: mappedIncident }
+    } catch (error) {
+        console.error("Error in getIncidentById:", error)
+        return { success: false, message: "Failed to fetch incident" }
+    }
+}
 

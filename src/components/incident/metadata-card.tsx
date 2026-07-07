@@ -1,5 +1,3 @@
-"use client"
-
 import { GlassPanel } from "@/components/ui/glass-panel"
 import { IconType } from "react-icons"
 
@@ -9,7 +7,7 @@ interface MetadataCardProps {
   label: string
   title: string
   subtitle1: string
-  subtitle2: string
+  subtitle2?: string
 }
 
 export function MetadataCard({
@@ -30,10 +28,10 @@ export function MetadataCard({
       </div>
       <div className="space-y-1">
         <p className="font-display text-base md:text-lg text-foreground">
-          {title}
+          {title[0].toUpperCase() + title.slice(1)}
         </p>
         <p className="text-xs md:text-sm text-muted-foreground">{subtitle1}</p>
-        <p className="text-xs md:text-sm text-muted-foreground">{subtitle2}</p>
+        {subtitle2 && <p className="text-xs md:text-sm text-muted-foreground">{subtitle2}</p>}
       </div>
     </GlassPanel>
   )

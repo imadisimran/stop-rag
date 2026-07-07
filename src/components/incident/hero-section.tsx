@@ -4,8 +4,33 @@ import { motion } from "framer-motion"
 import { FiShare2, FiFlag } from "react-icons/fi"
 import { GlassPanel } from "@/components/ui/glass-panel"
 import { Badge } from "@/components/ui/badge"
+import { format } from "date-fns"
 
-export function HeroSection() {
+interface HeroSectionProps {
+  title: string
+  postId: string
+  date: Date
+  universityName: string
+  severity?: string
+}
+
+export function HeroSection({ title, postId, date, universityName, severity = "LOW" }: HeroSectionProps) {
+  const formattedDate = format(new Date(date), "MMM d, yyyy")
+  
+  const displaySeverity = severity.charAt(0).toUpperCase() + severity.slice(1).toLowerCase()
+  
+  const getSeverityBadgeClasses = (sev: string) => {
+    switch (sev.toUpperCase()) {
+      case "HIGH":
+        return "bg-destructive/20 text-destructive border-destructive/30 animate-pulse"
+      case "MEDIUM":
+        return "bg-yellow-500/20 text-yellow-500 border-yellow-500/30"
+      case "LOW":
+      default:
+        return "bg-green-500/20 text-green-500 border-green-500/30"
+    }
+  }
+
   return (
     <GlassPanel className="p-6 md:p-8 rounded-3xl">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 md:gap-4 relative z-10">
@@ -13,19 +38,19 @@ export function HeroSection() {
           <div className="flex items-center gap-3 mb-4">
             <Badge 
                 variant="outline" 
-                className="bg-destructive/20 text-destructive border-destructive/30 animate-pulse uppercase tracking-widest"
+                className={`${getSeverityBadgeClasses(severity)} uppercase tracking-widest`}
             >
-              Urgent
+              {displaySeverity}
             </Badge>
             <span className="font-mono text-xs md:text-sm text-muted-foreground">
-              #RAG-7721
+              #{postId}
             </span>
           </div>
           <h1 className="font-display text-2xl md:text-4xl lg:text-5xl text-gradient mb-2 leading-tight">
-            Senior Hostelry Harassment
+            {title}
           </h1>
           <p className="text-sm md:text-base text-muted-foreground">
-            Central State University • Posted on Oct 24, 2023
+            {universityName} • Posted on {formattedDate}
           </p>
         </div>
 
