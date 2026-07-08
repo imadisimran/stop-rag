@@ -1,10 +1,10 @@
-import Link from "next/link"
+import { BackButton } from "@/components/incident/back-button"
 import { HeroSection } from "@/components/incident/hero-section"
 import { MetadataCard } from "@/components/incident/metadata-card"
 import { MyReportDescriptionSection } from "@/components/my-reports/description-section"
 import { ActionTimeline } from "@/components/incident/action-timeline"
 import { EvidenceGallery } from "@/components/incident/evidence-gallery"
-import { FiUser, FiMapPin, FiAlertCircle, FiArrowLeft } from "react-icons/fi"
+import { FiUser, FiMapPin, FiAlertCircle } from "react-icons/fi"
 import { getUserReportDetails } from "@/actions/report/report"
 import { notFound } from "next/navigation"
 
@@ -23,14 +23,7 @@ export default async function MyReportDetailPage({ params }: { params: Promise<{
     <div className="max-w-[1000px] w-full space-y-6 md:space-y-8 pb-20 md:pb-10">
       {/* Back Action */}
       <div className="mb-2">
-        <Link href="/dashboard/my-reports">
-          <button className="bg-white/5 border border-white/15 px-5 py-3 rounded-xl flex items-center gap-3 group hover:bg-primary/10 hover:border-primary/40 transition-all text-foreground cursor-pointer">
-            <FiArrowLeft className="group-hover:-translate-x-1 transition-transform" />
-            <span className="text-xs uppercase tracking-wider font-semibold">
-              Back to My Reports
-            </span>
-          </button>
-        </Link>
+        <BackButton label="Back to My Reports" />
       </div>
 
       {/* Hero Section */}

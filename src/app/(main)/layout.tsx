@@ -2,6 +2,7 @@ import { GlowBackground } from "@/components/layout/glow-background"
 import { TopNavbar } from "@/components/layout/top-navbar"
 import { Sidebar } from "@/components/layout/sidebar"
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav"
+import { FeedProvider } from "@/components/providers/feed-provider"
 
 export default function MainLayout({
   children,
@@ -9,7 +10,7 @@ export default function MainLayout({
   children: React.ReactNode
 }) {
   return (
-    <>
+    <FeedProvider>
       {/* Background glow orbs */}
       <GlowBackground />
 
@@ -26,6 +27,6 @@ export default function MainLayout({
 
       {/* Mobile Bottom Navigation */}
       <MobileBottomNav />
-    </>
+    </FeedProvider>
   )
 }

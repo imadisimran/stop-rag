@@ -2,6 +2,7 @@ import { GlowBackground } from "@/components/layout/glow-background"
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar"
 import { DashboardTopbar } from "@/components/dashboard/dashboard-topbar"
 import { DashboardMobileNav } from "@/components/dashboard/dashboard-mobile-nav"
+import { ReportsProvider } from "@/components/providers/reports-provider"
 
 export default function DashboardLayout({
   children,
@@ -9,7 +10,7 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   return (
-    <>
+    <ReportsProvider>
       {/* Background glow orbs */}
       <GlowBackground />
 
@@ -26,6 +27,6 @@ export default function DashboardLayout({
 
       {/* Mobile bottom nav */}
       <DashboardMobileNav />
-    </>
+    </ReportsProvider>
   )
 }

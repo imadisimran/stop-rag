@@ -13,6 +13,8 @@ import { PublicReportCardData } from "@/types"
 import { toast } from "sonner"
 import { motion, AnimatePresence } from "framer-motion"
 
+import { useFeedContext } from "@/components/providers/feed-provider"
+
 gsap.registerPlugin(ScrollTrigger, useGSAP)
 
 interface IncidentListProps {
@@ -24,23 +26,77 @@ export function IncidentList({ initialReports, initialHasMore }: IncidentListPro
   const containerRef = useRef<HTMLDivElement>(null)
   const observerTarget = useRef<HTMLDivElement>(null)
 
-  // Filters and Pagination states
-  const [reports, setReports] = useState<PublicReportCardData[]>(initialReports)
-  const [hasMore, setHasMore] = useState(initialHasMore)
-  const [page, setPage] = useState(1)
+  // Use global context instead of local state for data persistence
+  const {
+    reports, setReports,
+    page, setPage,
+    hasMore, setHasMore,
+    searchQuery, setSearchQuery,
+    severityFilter, setSeverityFilter,
+    dateSort, setDateSort,
+    scrollPositionRef,
+    hasLoadedOnce, setHasLoadedOnce
+  } = useFeedContext()
+
+  // Local UI states
   const [isLoading, setIsLoading] = useState(false)
   const [isFetchingMore, setIsFetchingMore] = useState(false)
 
-  const [searchQuery, setSearchQuery] = useState("")
-  const [severityFilter, setSeverityFilter] = useState("All")
-  const [dateSort, setDateSort] = useState("newest")
+  // Use either the cache from context or initialReports for the first render
+  const activeReports = reports.length === 0 && !hasLoadedOnce ? initialReports : reports
+  const activeHasMore = reports.length === 0 && !hasLoadedOnce ? initialHasMore : hasMore
 
-  // Track if this is the first client-side load to avoid duplicate initial fetches
+  const isRestoring = useRef(reports.length > 0)
   const isFirstRender = useRef(true)
+
+  // Initialize context on client side with server-loaded data if first load
+  useEffect(() => {
+    if (!hasLoadedOnce) {
+      setReports(initialReports)
+      setHasMore(initialHasMore)
+      setHasLoadedOnce(true)
+    }
+  }, [initialReports, initialHasMore, hasLoadedOnce, setReports, setHasMore, setHasLoadedOnce])
+
+  // Listen to scroll events to save scroll position
+  useEffect(() => {
+    const handleScroll = () => {
+      scrollPositionRef.current = window.scrollY
+    }
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    return () => {
+      window.removeEventListener("scroll", handleScroll)
+    }
+  }, [scrollPositionRef])
+
+  // Robust scroll restoration after routing back
+  useEffect(() => {
+    const reportsLength = reports.length === 0 && !hasLoadedOnce ? initialReports.length : reports.length
+    if (reportsLength > 0 && scrollPositionRef.current > 0) {
+      const targetScroll = scrollPositionRef.current
+      // Try restoring at multiple intervals to override Next.js scroll-to-top execution
+      const intervals = [10, 50, 100, 200, 300, 500]
+      const timers = intervals.map(delay =>
+        setTimeout(() => {
+          window.scrollTo({
+            top: targetScroll,
+            behavior: "instant"
+          })
+        }, delay)
+      )
+      return () => {
+        timers.forEach(clearTimeout)
+      }
+    }
+  }, [reports, hasLoadedOnce, initialReports, scrollPositionRef])
 
   // Fetch reports when filters or page changes
   useEffect(() => {
-    // Skip the very first render as we already have server-rendered initialReports
+    // Skip fetching if restoring from cache or on the very first load
+    if (isRestoring.current) {
+      isRestoring.current = false
+      return
+    }
     if (isFirstRender.current) {
       isFirstRender.current = false
       return
@@ -86,18 +142,21 @@ export function IncidentList({ initialReports, initialHasMore }: IncidentListPro
     }, 300)
 
     return () => clearTimeout(timeoutId)
-  }, [page, searchQuery, severityFilter, dateSort])
+  }, [page, searchQuery, severityFilter, dateSort, setReports, setHasMore])
 
   // Reset page to 1 when any filter changes
   useEffect(() => {
-    setPage(1)
-  }, [searchQuery, severityFilter, dateSort])
+    // Only reset if it's not the initial mount
+    if (!isRestoring.current && !isFirstRender.current) {
+      setPage(1)
+    }
+  }, [searchQuery, severityFilter, dateSort, setPage])
 
   // Intersection Observer for infinite scrolling
-  const fetchStateRef = useRef({ hasMore, isLoading, isFetchingMore })
+  const fetchStateRef = useRef({ hasMore: activeHasMore, isLoading, isFetchingMore })
   useEffect(() => {
-    fetchStateRef.current = { hasMore, isLoading, isFetchingMore }
-  }, [hasMore, isLoading, isFetchingMore])
+    fetchStateRef.current = { hasMore: activeHasMore, isLoading, isFetchingMore }
+  }, [activeHasMore, isLoading, isFetchingMore])
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -118,7 +177,7 @@ export function IncidentList({ initialReports, initialHasMore }: IncidentListPro
     return () => {
       if (currentTarget) observer.unobserve(currentTarget)
     }
-  }, [isLoading, hasMore])
+  }, [isLoading, activeHasMore, setPage])
 
   useGSAP(
     () => {
@@ -185,7 +244,7 @@ export function IncidentList({ initialReports, initialHasMore }: IncidentListPro
       )}
 
       {/* Empty State */}
-      {!isLoading && reports.length === 0 && (
+      {!isLoading && activeReports.length === 0 && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -200,23 +259,23 @@ export function IncidentList({ initialReports, initialHasMore }: IncidentListPro
       )}
 
       {/* Cards Grid */}
-      {!isLoading && reports.length > 0 && (
+      {!isLoading && activeReports.length > 0 && (
         <div className="grid grid-cols-1 gap-6">
           <AnimatePresence>
-            {reports.map((incident) => <IncidentCard key={incident.postId} data={incident} />)}
+            {activeReports.map((incident) => <IncidentCard key={incident.postId} data={incident} />)}
           </AnimatePresence>
         </div>
       )}
 
       {/* Infinite Scroll Loader */}
-      {!isLoading && hasMore && (
+      {!isLoading && activeHasMore && (
         <div ref={observerTarget}>
           <LoadingMore />
         </div>
       )}
 
       {/* Feed Up To Date Indicator */}
-      {!isLoading && !hasMore && reports.length > 0 && (
+      {!isLoading && !activeHasMore && activeReports.length > 0 && (
         <div className="flex flex-col items-center justify-center py-8 gap-3 border-t border-white/5 mt-8">
           <FiCheckCircle className="w-6 h-6 text-primary/50" />
           <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">

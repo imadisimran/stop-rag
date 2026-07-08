@@ -6,6 +6,7 @@ import gsap from "gsap"
 import { useGSAP } from "@gsap/react"
 import { toast } from "sonner"
 import { getUserReports } from "@/actions/report/report"
+import { useReportsContext } from "@/components/providers/reports-provider"
 import {
   FiGrid,
   FiList,
@@ -31,28 +32,78 @@ gsap.registerPlugin(useGSAP)
 export default function MyReportsPage() {
   const pageRef = useRef<HTMLDivElement>(null)
   const observerTarget = useRef<HTMLDivElement>(null)
-  const [reports, setReports] = useState<UserReportCardData[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  
+  // Use global context instead of local state for data persistence
+  const {
+    reports, setReports,
+    page, setPage,
+    hasMore, setHasMore,
+    searchQuery, setSearchQuery,
+    statusFilter, setStatusFilter,
+    severityFilter, setSeverityFilter,
+    dateSort, setDateSort,
+    scrollPositionRef
+  } = useReportsContext()
+
+  // Local UI state
+  const [isLoading, setIsLoading] = useState(reports.length === 0)
   const [isFetchingMore, setIsFetchingMore] = useState(false)
-  const [page, setPage] = useState(1)
-  const [hasMore, setHasMore] = useState(true)
   const [viewMode, setViewMode] = useState<"grid" | "list">("list")
-  const [searchQuery, setSearchQuery] = useState("")
-  const [statusFilter, setStatusFilter] = useState("All")
-  const [severityFilter, setSeverityFilter] = useState("All")
-  const [dateSort, setDateSort] = useState("newest")
+  
+  const isInitialMount = useRef(true)
+
+  // Listen to scroll events to update position ref
+  useEffect(() => {
+    const handleScroll = () => {
+      scrollPositionRef.current = window.scrollY
+    }
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    return () => {
+      window.removeEventListener("scroll", handleScroll)
+    }
+  }, [scrollPositionRef])
+
+  // Scroll Restoration
+  useEffect(() => {
+    if (reports.length > 0 && scrollPositionRef.current > 0) {
+      const targetScroll = scrollPositionRef.current
+      // Try restoring at multiple intervals to override Next.js scroll-to-top execution
+      const intervals = [10, 50, 100, 200, 300, 500]
+      const timers = intervals.map(delay =>
+        setTimeout(() => {
+          window.scrollTo({
+            top: targetScroll,
+            behavior: "instant"
+          })
+        }, delay)
+      )
+      return () => {
+        timers.forEach(clearTimeout)
+      }
+    }
+  }, [reports, scrollPositionRef])
 
   // Fetch reports when page or filters change
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      // If we already have reports (from context), skip initial fetch
+      if (reports.length > 0) {
+        setIsLoading(false)
+        return
+      }
+    }
 
     if (page === 1) {
       setIsLoading(true)
-      setReports([])
+      // Only clear reports if we are actually fetching page 1 
+      // (not restoring from context)
+      if (!isInitialMount.current) setReports([])
+    } else {
+      setIsFetchingMore(true)
     }
-    else setIsFetchingMore(true)
 
     const fetchReports = async () => {
-
       const res = await getUserReports({
         searchQuery,
         statusFilter,
@@ -86,7 +137,7 @@ export default function MyReportsPage() {
     }, 300)
 
     return () => clearTimeout(timeoutId)
-  }, [page, searchQuery, statusFilter, severityFilter, dateSort])
+  }, [page, searchQuery, statusFilter, severityFilter, dateSort, setReports, setHasMore])
 
   // Intersection Observer for infinite scrolling
   const fetchStateRef = useRef({ hasMore, isLoading, isFetchingMore })
@@ -109,23 +160,26 @@ export default function MyReportsPage() {
 
     if (observerTarget.current) observer.observe(observerTarget.current)
     return () => observer.disconnect()
-  }, [isLoading, hasMore])
+  }, [isLoading, hasMore, setPage])
 
   // GSAP animation for page entrance
   useGSAP(
     () => {
-      gsap.fromTo(
-        ".animate-gsap-header",
-        { opacity: 0, y: -30 },
-        { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }
-      )
-      gsap.fromTo(
-        ".animate-gsap-filters",
-        { opacity: 0, y: 20 },
-        { opacity: 1, y: 0, duration: 0.6, ease: "power3.out", delay: 0.15 }
-      )
+      // Only animate entrance if we are loading fresh, otherwise keep it snappy
+      if (reports.length === 0) {
+        gsap.fromTo(
+          ".animate-gsap-header",
+          { opacity: 0, y: -30 },
+          { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }
+        )
+        gsap.fromTo(
+          ".animate-gsap-filters",
+          { opacity: 0, y: 20 },
+          { opacity: 1, y: 0, duration: 0.6, ease: "power3.out", delay: 0.15 }
+        )
+      }
     },
-    { scope: pageRef }
+    { scope: pageRef, dependencies: [reports.length === 0] }
   )
 
 
@@ -286,7 +340,7 @@ export default function MyReportsPage() {
       )}
 
       {/* Infinite Scroll Loader Placeholder */}
-      {!isLoading && hasMore && (
+      {!isLoading && hasMore && reports.length > 0 && (
         <div ref={observerTarget} className="flex flex-col items-center justify-center py-8 gap-3 border-t border-white/5 mt-8">
           <div className="w-6 h-6 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
           <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">
