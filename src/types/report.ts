@@ -153,3 +153,7 @@ export type PublicDetailsReport = Omit<
     academicSession: string;
   };
 };
+
+export interface UserReportDetails extends IncidentDetails{
+  rawDescription:string;
+}

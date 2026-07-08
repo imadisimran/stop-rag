@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { UserReportCardData } from "@/types"
 import { format } from "date-fns"
+import Link from "next/link"
 
 interface UserReportCardProps {
   report: UserReportCardData
@@ -95,15 +96,20 @@ export function UserReportCard({ report }: UserReportCardProps) {
           </div>
 
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="rounded-xl text-[11px] h-8 px-3">
-              View Live
-            </Button>
-            <Button variant="gradient" size="sm" className="rounded-xl text-[11px] h-8 px-3">
-              View Details
-            </Button>
+            <Link href={`/incidents/${report.postId}`}>
+              <Button variant="outline" size="sm" className="rounded-xl text-[11px] h-8 px-3 cursor-pointer">
+                View Live
+              </Button>
+            </Link>
+            <Link href={`/dashboard/my-reports/${report.postId}`}>
+              <Button variant="gradient" size="sm" className="rounded-xl text-[11px] h-8 px-3 cursor-pointer">
+                View Details
+              </Button>
+            </Link>
           </div>
         </div>
       </GlassPanel>
     </motion.div>
   )
 }
+
