@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { FiSearch } from "react-icons/fi"
+import { FiSearch, FiXCircle } from "react-icons/fi"
 import {
   Select,
   SelectContent,
@@ -27,6 +27,14 @@ export function FilterTabs({
   dateSort,
   setDateSort,
 }: FilterTabsProps) {
+  const isFiltersDirty = searchQuery !== "" || severityFilter !== "All" || dateSort !== "newest"
+
+  const handleReset = () => {
+    setSearchQuery("")
+    setSeverityFilter("All")
+    setDateSort("newest")
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -47,7 +55,7 @@ export function FilterTabs({
       </div>
 
       {/* Select Dropdowns */}
-      <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+      <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto items-center">
         {/* Severity Filter */}
         <Select value={severityFilter} onValueChange={setSeverityFilter}>
           <SelectTrigger className="w-full sm:w-[150px] text-muted-foreground">
@@ -71,6 +79,17 @@ export function FilterTabs({
             <SelectItem value="oldest">Date: Oldest First</SelectItem>
           </SelectContent>
         </Select>
+
+        {/* Reset Button */}
+        {isFiltersDirty && (
+          <button
+            onClick={handleReset}
+            className="w-full sm:w-auto bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-white border border-dashed border-white/15 hover:border-white/30 rounded-xl px-4 text-xs h-10 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            <FiXCircle className="w-4 h-4" />
+            Reset Filters
+          </button>
+        )}
       </div>
     </motion.div>
   )

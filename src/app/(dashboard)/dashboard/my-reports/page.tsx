@@ -13,6 +13,7 @@ import {
   FiSearch,
   FiCheckCircle,
   FiInfo,
+  FiXCircle,
 } from "react-icons/fi"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -51,6 +52,16 @@ export default function MyReportsPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("list")
   
   const isInitialMount = useRef(true)
+
+  const isFiltersDirty = searchQuery !== "" || statusFilter !== "All" || severityFilter !== "All" || dateSort !== "newest"
+
+  const handleResetFilters = () => {
+    setSearchQuery("")
+    setStatusFilter("All")
+    setSeverityFilter("All")
+    setDateSort("newest")
+    setPage(1)
+  }
 
   // Listen to scroll events to update position ref
   useEffect(() => {
@@ -242,7 +253,7 @@ export default function MyReportsPage() {
         </div>
 
         {/* Filter Dropdowns */}
-        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto items-center">
           <Select
             value={statusFilter}
             onValueChange={(value) => {
@@ -296,6 +307,18 @@ export default function MyReportsPage() {
               <SelectItem value="Low">Low</SelectItem>
             </SelectContent>
           </Select>
+
+          {/* Reset Filters Button */}
+          {isFiltersDirty && (
+            <Button
+              variant="ghost"
+              onClick={handleResetFilters}
+              className="w-full sm:w-auto border border-dashed border-white/15 hover:border-white/30 rounded-xl px-4 text-xs h-10 text-muted-foreground hover:text-foreground cursor-pointer flex items-center justify-center gap-1.5 transition-all"
+            >
+              <FiXCircle className="w-4 h-4" />
+              Reset Filters
+            </Button>
+          )}
         </div>
       </div>
 
