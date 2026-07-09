@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { FiMoreVertical, FiEye, FiCheckCircle, FiFlag, FiInfo, FiTrash2, FiSend } from "react-icons/fi"
+import { FiMoreVertical, FiCheckCircle, FiFlag, FiInfo, FiTrash2, FiSend } from "react-icons/fi"
 import { GlassPanel } from "@/components/ui/glass-panel"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -28,6 +28,32 @@ import { toast } from "sonner"
 import { useReportsContext } from "@/components/providers/reports-provider"
 import { deleteReport } from "@/actions/report/report"
 import { submitAppeal } from "@/actions/appeal/appeal"
+import { UnderReviewCard } from "./under-review-card"
+
+function getStatusDetails(status: string) {
+  switch (status.toUpperCase()) {
+    case "ACCEPTED":
+      return {
+        label: "Accepted",
+        bgClass: "bg-success/20 text-success border-success/30",
+        icon: <FiCheckCircle className="w-3.5 h-3.5" />,
+      }
+    case "REJECTED":
+      return {
+        label: "Rejected",
+        bgClass: "bg-destructive/20 text-destructive border-destructive/30",
+        icon: <FiFlag className="w-3.5 h-3.5" />,
+      }
+    case "APPEALED":
+      return {
+        label: "Appealed",
+        bgClass: "bg-yellow-500/20 text-yellow-500 border-yellow-500/30",
+        icon: <FiInfo className="w-3.5 h-3.5" />,
+      }
+    default:
+      return null
+  }
+}
 
 interface UserReportCardProps {
   report: UserReportCardData
@@ -93,6 +119,25 @@ export function UserReportCard({ report }: UserReportCardProps) {
     } finally {
       setIsAppealing(false)
     }
+  }
+
+  const isUnderReviewOrFailed = ["PENDING", "PROCESSING", "QUEUED", "FAILED"].includes(report.status)
+  const statusDetail = getStatusDetails(report.status)
+
+  if (isUnderReviewOrFailed) {
+    return (
+      <motion.div
+        layout
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        transition={{ duration: 0.3 }}
+        whileHover={{ y: -4 }}
+        className="w-full"
+      >
+        <UnderReviewCard report={report} />
+      </motion.div>
+    )
   }
 
   return (
@@ -165,32 +210,10 @@ export function UserReportCard({ report }: UserReportCardProps) {
         {/* Bottom Stats & Actions */}
         <div className="flex flex-wrap items-center justify-between gap-4 border-t border-white/5 pt-4 mt-auto">
           <div className="flex items-center gap-4">
-            {/* Status badge */}
-            {(report.status === "PENDING" || report.status === "PROCESSING" || report.status === "QUEUED") && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-muted/40 text-muted-foreground border border-white/10">
-                <FiEye className="w-3.5 h-3.5" />
-                <span className="font-body text-[10px] font-bold uppercase tracking-wider">{report.status}</span>
-              </div>
-            )}
-
-            {report.status === "ACCEPTED" && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-success/20 text-success border border-success/30">
-                <FiCheckCircle className="w-3.5 h-3.5" />
-                <span className="font-body text-[10px] font-bold uppercase tracking-wider">Accepted</span>
-              </div>
-            )}
-
-            {report.status === "REJECTED" && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-destructive/20 text-destructive border border-destructive/30">
-                <FiFlag className="w-3.5 h-3.5" />
-                <span className="font-body text-[10px] font-bold uppercase tracking-wider">Rejected</span>
-              </div>
-            )}
-
-            {report.status === "APPEALED" && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-yellow-500/20 text-yellow-500 border border-yellow-500/30">
-                <FiInfo className="w-3.5 h-3.5" />
-                <span className="font-body text-[10px] font-bold uppercase tracking-wider">Appealed</span>
+            {statusDetail && (
+              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border ${statusDetail.bgClass}`}>
+                {statusDetail.icon}
+                <span className="font-body text-[10px] font-bold uppercase tracking-wider">{statusDetail.label}</span>
               </div>
             )}
           </div>

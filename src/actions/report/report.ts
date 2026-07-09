@@ -154,22 +154,28 @@ export const getUserReports = async (filters: ReportFilters = {}): Promise<Serve
             status: 1,
             detectedSeverity: 1,
             adminVerification: 1,
+            description: 1,
             _id: 0
         }).sort({ createdAt: sortDir }).skip(skipCount).limit(limit + 1).toArray()
 
         const hasMore = reports.length > limit
         const paginatedReports = hasMore ? reports.slice(0, limit) : reports
 
-        const mappedReports = paginatedReports.map((report) => ({
-            title: report.sanitizedTitle || "Unknown Incident",
-            description: report.sanitizedDescription || "No description available",
-            status: report.status || "Accepted",
-            incidentType: report.incidentType || "N/A",
-            createdAt: report.createdAt || new Date(),
-            postId: report.postId || "error404",
-            severity: report.detectedSeverity || "LOW",
-            isAppealed: report.adminVerification?.isAppealed || false,
-        } as UserReportCardData))
+        const mappedReports = paginatedReports.map((report) => {
+            const isUnderReview = ["PENDING", "PROCESSING", "QUEUED", "FAILED"].includes(report.status?.toUpperCase() || "")
+            return {
+                title: (report.sanitizedTitle || "Unknown Incident"),
+                description: isUnderReview
+                    ? (report.description || "No description available")
+                    : (report.sanitizedDescription || "No description available"),
+                status: report.status || "PENDING",
+                incidentType: report.incidentType || "N/A",
+                createdAt: report.createdAt || new Date(),
+                postId: report.postId || "error404",
+                severity: report.detectedSeverity || "LOW",
+                isAppealed: report.adminVerification?.isAppealed || false,
+            } as UserReportCardData
+        })
 
         return { success: true, message: "Reports fetched successfully", data: { reports: mappedReports, hasMore } }
     } catch (error) {
