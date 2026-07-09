@@ -7,6 +7,7 @@ import { EvidenceGallery } from "@/components/incident/evidence-gallery"
 import { FiUser, FiMapPin, FiAlertCircle } from "react-icons/fi"
 import { getUserReportDetails } from "@/actions/report/report"
 import { notFound } from "next/navigation"
+import { StatusBanner } from "@/components/my-reports/status-banner"
 
 export default async function MyReportDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params
@@ -34,6 +35,13 @@ export default async function MyReportDetailPage({ params }: { params: Promise<{
         universityName={incident.university}
         severity={incident.severity || "LOW"}
         showFlagButton={false}
+      />
+
+      {/* Status & Appeal Note Banner */}
+      <StatusBanner
+        status={incident.status}
+        postId={incident.postId}
+        adminVerification={incident.adminVerification}
       />
 
       {/* Metadata Grid */}

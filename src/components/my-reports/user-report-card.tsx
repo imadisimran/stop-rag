@@ -169,7 +169,7 @@ export function UserReportCard({ report }: UserReportCardProps) {
             {(report.status === "PENDING" || report.status === "PROCESSING" || report.status === "QUEUED") && (
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-muted/40 text-muted-foreground border border-white/10">
                 <FiEye className="w-3.5 h-3.5" />
-                <span className="font-body text-[10px] font-bold uppercase tracking-wider">Under Review</span>
+                <span className="font-body text-[10px] font-bold uppercase tracking-wider">{report.status}</span>
               </div>
             )}
 
