@@ -1,6 +1,7 @@
 import { FiEye, FiCheckCircle, FiFlag, FiInfo, FiAlertCircle } from "react-icons/fi"
 import { GlassPanel } from "@/components/ui/glass-panel"
 import { AppealButton } from "./appeal-button"
+import { DeleteButton } from "./delete-button"
 import { AdminVerification } from "@/types"
 
 function getStatusBadge(status: string) {
@@ -65,9 +66,12 @@ export function StatusBanner({ status, postId, adminVerification }: StatusBanner
           <span className="text-sm font-semibold text-muted-foreground">Report Verification Status:</span>
           {getStatusBadge(status)}
         </div>
-        {status === "REJECTED" && !adminVerification?.isAppealed && (
-          <AppealButton postId={postId} />
-        )}
+        <div className="flex items-center gap-2">
+          {status === "REJECTED" && !adminVerification?.isAppealed && (
+            <AppealButton postId={postId} />
+          )}
+          <DeleteButton postId={postId} />
+        </div>
       </div>
       {status === "APPEALED" && adminVerification?.appealNote && (
         <div className="border-t border-white/5 pt-3">

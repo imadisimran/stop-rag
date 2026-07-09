@@ -15,11 +15,13 @@ import { toast } from "sonner"
 import { submitAppeal } from "@/actions/appeal/appeal"
 import { FiSend } from "react-icons/fi"
 import { useRouter } from "next/navigation"
+import { useReportsContext } from "@/components/providers/reports-provider"
 
 export function AppealButton({ postId }: { postId: string }) {
   const [isOpen, setIsOpen] = useState(false)
   const [note, setNote] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  const { setReports } = useReportsContext()
   const router = useRouter()
 
   const handleAppeal = async () => {
@@ -33,6 +35,13 @@ export function AppealButton({ postId }: { postId: string }) {
       const res = await submitAppeal(postId, note)
       if (res.success) {
         toast.success("Appeal submitted successfully", { id: toastId })
+        setReports((prev) =>
+          prev.map((r) =>
+            r.postId === postId
+              ? { ...r, status: "APPEALED", isAppealed: true }
+              : r
+          )
+        )
         setIsOpen(false)
         setNote("")
         router.refresh() // Refresh page to reflect new status
