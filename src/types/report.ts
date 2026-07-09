@@ -20,7 +20,7 @@ export interface ReportStudentInfo extends StudentDetails {
   userId: string;
 }
 
-export type ReportStatus = "PENDING" | "PROCESSING" | "ACCEPTED" | "REJECTED" | "APPEALED" | "QUEUED";
+export type ReportStatus = "PENDING" | "PROCESSING" | "ACCEPTED" | "REJECTED" | "APPEALED" | "QUEUED" | "FAILED";
 
 export type ReportSeverity = "HIGH" | "MEDIUM" | "LOW";
 
@@ -32,6 +32,14 @@ export interface AdminVerification {
   appealSubmittedAt?: Date | null;
   adminNote?: string;
   resolvedAt?: Date;
+}
+
+export interface UpdatedAt {
+  timestamp: Date;
+  status: ReportStatus;
+  verifiedBy?: string;
+  adminId?: string | null;
+  note?: string | null;
 }
 
 export interface Report {
@@ -52,13 +60,7 @@ export interface Report {
   createdAt: Date;
   status: ReportStatus;
   student: ReportStudentInfo;
-  updatedAt?: {
-    timestamp: Date;
-    status: ReportStatus;
-    verifiedBy: string;
-    adminId: string | null;
-    note: string | null;
-  }[];
+  updatedAt?: UpdatedAt[];
   upVotesCount: number;
   upVotesBy: string[];
   adminVerification: null | AdminVerification;
@@ -128,13 +130,7 @@ export interface IncidentDetails {
   };
   proofUrls: ProofUrl[] | null;
   upVotesCount: number;
-  updatedAt?: {
-    timestamp: Date;
-    status: ReportStatus;
-    verifiedBy: string;
-    adminId: string | null;
-    note: string | null;
-  }[];
+  updatedAt?: UpdatedAt[];
 }
 
 
@@ -154,6 +150,8 @@ export type PublicDetailsReport = Omit<
   };
 };
 
-export interface UserReportDetails extends IncidentDetails{
-  rawDescription:string;
+export interface UserReportDetails extends IncidentDetails {
+  rawDescription: string;
+  rejectionReason?: string | null;
+  adminVerification?: AdminVerification | null;
 }

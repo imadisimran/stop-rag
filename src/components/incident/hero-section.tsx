@@ -12,10 +12,19 @@ interface HeroSectionProps {
   date: Date
   universityName: string
   severity?: string
+  showFlagButton?: boolean
 }
 
-export function HeroSection({ title, postId, date, universityName, severity = "LOW" }: HeroSectionProps) {
+export function HeroSection({
+  title,
+  postId,
+  date,
+  universityName,
+  severity = "LOW",
+  showFlagButton = true,
+}: HeroSectionProps) {
   const formattedDate = format(new Date(date), "MMM d, yyyy")
+
   
   const displaySeverity = severity.charAt(0).toUpperCase() + severity.slice(1).toLowerCase()
   
@@ -64,15 +73,17 @@ export function HeroSection({ title, postId, date, universityName, severity = "L
               Share
             </span>
           </motion.button>
-          <motion.button
-            whileHover={{ y: -2 }}
-            className="flex-1 md:flex-none bg-white/5 border border-white/15 p-3 md:p-4 rounded-2xl flex flex-col items-center gap-1 hover:bg-white/10 transition-colors"
-          >
-            <FiFlag className="text-destructive text-lg md:text-xl" />
-            <span className="text-[10px] uppercase font-bold tracking-tight">
-              Flag
-            </span>
-          </motion.button>
+          {showFlagButton && (
+            <motion.button
+              whileHover={{ y: -2 }}
+              className="flex-1 md:flex-none bg-white/5 border border-white/15 p-3 md:p-4 rounded-2xl flex flex-col items-center gap-1 hover:bg-white/10 transition-colors"
+            >
+              <FiFlag className="text-destructive text-lg md:text-xl" />
+              <span className="text-[10px] uppercase font-bold tracking-tight">
+                Flag
+              </span>
+            </motion.button>
+          )}
         </div>
       </div>
     </GlassPanel>

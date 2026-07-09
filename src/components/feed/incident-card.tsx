@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useRef } from "react";
 import {
   MessageCircle,
   Heart,
@@ -10,51 +10,13 @@ import {
   MapPin,
   Hash,
   Users,
-  Lock,
-  AlertTriangle,
-  FileText,
-  Shield,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 
-import type { PublicReportCardData, ReportStatus } from "@/types";
+import type { PublicReportCardData } from "@/types";
 import { format, formatDistanceToNow } from "date-fns";
-
-const statusConfig: Record<ReportStatus, { label: string; className: string }> = {
-  PENDING: {
-    label: "PENDING",
-    className:
-      "border-sky-500/40 text-sky-300 bg-sky-500/10 shadow-[0_0_20px_rgba(14,165,233,0.3),inset_0_0_12px_rgba(14,165,233,0.15)]",
-  },
-  PROCESSING: {
-    label: "PROCESSING",
-    className:
-      "border-amber-500/40 text-amber-300 bg-amber-500/10 shadow-[0_0_20px_rgba(245,158,11,0.3),inset_0_0_12px_rgba(245,158,11,0.15)]",
-  },
-  QUEUED: {
-    label: "QUEUED",
-    className:
-      "border-amber-500/40 text-amber-300 bg-amber-500/10 shadow-[0_0_20px_rgba(245,158,11,0.3),inset_0_0_12px_rgba(245,158,11,0.15)]",
-  },
-  ACCEPTED: {
-    label: "ACCEPTED",
-    className:
-      "border-emerald-500/40 text-emerald-300 bg-emerald-500/10 shadow-[0_0_20px_rgba(16,185,129,0.3),inset_0_0_12px_rgba(16,185,129,0.15)]",
-  },
-  REJECTED: {
-    label: "REJECTED",
-    className:
-      "border-rose-500/40 text-rose-300 bg-rose-500/10 shadow-[0_0_20px_rgba(244,63,94,0.3),inset_0_0_12px_rgba(244,63,94,0.15)]",
-  },
-  APPEALED: {
-    label: "APPEALED",
-    className:
-      "border-purple-500/40 text-purple-300 bg-purple-500/10 shadow-[0_0_20px_rgba(168,85,247,0.3),inset_0_0_12px_rgba(168,85,247,0.15)]",
-  },
-};
 
 export function IncidentCard({ data }: { data: PublicReportCardData }) {
   const cardRef = useRef<HTMLDivElement>(null);
@@ -71,9 +33,6 @@ export function IncidentCard({ data }: { data: PublicReportCardData }) {
     cardRef.current.style.setProperty("--mouse-x", `${x}px`);
     cardRef.current.style.setProperty("--mouse-y", `${y}px`);
   };
-
-  const currentStatus = statusConfig[data.status] || statusConfig.PENDING;
-
   return (
     <div
       ref={cardRef}
@@ -140,15 +99,7 @@ export function IncidentCard({ data }: { data: PublicReportCardData }) {
             </div>
 
             {/* Badges */}
-            <div className="flex flex-wrap items-center gap-2.5">
-              <span
-                className={cn(
-                  "font-display px-5 py-1.5 rounded-full text-[12px] font-bold tracking-wider border transition-all duration-300",
-                  currentStatus.className
-                )}
-              >
-                {currentStatus.label}
-              </span>
+            <div>
               <Badge
                 variant={data.severity === "HIGH" ? "destructive" : data.severity === "MEDIUM" ? "tertiary" : "secondary"}
                 className="font-display px-4 py-1.5 rounded-full text-[11px] font-bold tracking-wider uppercase"

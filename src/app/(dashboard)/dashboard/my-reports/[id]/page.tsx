@@ -33,6 +33,7 @@ export default async function MyReportDetailPage({ params }: { params: Promise<{
         date={incident.createdAt}
         universityName={incident.university}
         severity={incident.severity || "LOW"}
+        showFlagButton={false}
       />
 
       {/* Metadata Grid */}

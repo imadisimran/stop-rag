@@ -55,3 +55,12 @@ export async function getCloudinarySignature(): Promise<SignatureResponse> {
     folder,
   }
 }
+
+export async function deleteFromCloudinary(publicId: string, resourceType: string = "image"): Promise<any> {
+  if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_API_KEY || !CLOUDINARY_API_SECRET) {
+    throw new Error(
+      "Cloudinary credentials are not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET."
+    )
+  }
+  return await cloudinary.uploader.destroy(publicId, { resource_type: resourceType })
+}

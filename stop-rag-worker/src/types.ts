@@ -15,3 +15,14 @@ export interface AiVerdict {
     detectedSeverity: 'LOW' | 'MEDIUM' | 'HIGH';
     rejectionReason: string | null;
 }
+
+export type ReportStatus = "PENDING" | "PROCESSING" | "ACCEPTED" | "REJECTED" | "APPEALED" | "QUEUED" | "FAILED";
+
+
+export interface UpdatedAt {
+  timestamp: Date;
+  status: ReportStatus;
+  verifiedBy?: string;
+  adminId?: string | null;
+  note?: string | null;
+}

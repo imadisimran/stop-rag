@@ -5,6 +5,7 @@ import { dbConnect } from "@/lib/dbConnect"
 import { FrontendIncidentPayload, Report, ReportFilters, ServerReturn, UserReportCardData, PublicReportCardData, PublicReportFilters, PublicDetailsReport, IncidentDetails, UserReportDetails } from "@/types"
 import { getServerSession } from "next-auth"
 import { generateUniqueId } from "@/lib/utils"
+import { deleteFromCloudinary } from "@/actions/cloudinary/cloudinary"
 
 export const postReport = async (
     payload: FrontendIncidentPayload
@@ -349,6 +350,8 @@ export const getUserReportDetails = async (
                     proofUrls: 1,
                     upVotesCount: 1,
                     updatedAt: 1,
+                    rejectionReason: 1,
+                    adminVerification: 1,
                     _id: 0,
                 },
             }
@@ -377,11 +380,66 @@ export const getUserReportDetails = async (
             proofUrls: report.proofUrls || null,
             upVotesCount: report.upVotesCount || 0,
             updatedAt: report.updatedAt,
+            rejectionReason: report.rejectionReason,
+            adminVerification: report.adminVerification,
         }
 
         return { success: true, message: "Incident fetched successfully", data: mappedIncident }
     } catch (error) {
         console.error("Error in getAuthIncidentById:", error)
         return { success: false, message: "Failed to fetch incident" }
+    }
+}
+
+export const deleteReport = async (
+    postId: string
+): Promise<ServerReturn<null>> => {
+    const session = await getServerSession(authOptions)
+
+    if (!session) {
+        return { success: false, message: "User must login to delete a report" }
+    }
+
+    try {
+        const collection = await dbConnect<Report>("incidents")
+        const report = await collection.findOne(
+            { postId, "student.userId": session.user.userId },
+            {
+                projection: {
+                    postId: 1,
+                    "student.userId": 1,
+                    proofUrls: 1,
+                    _id: 0,
+                }
+            }
+        )
+
+        if (!report) {
+            return { success: false, message: "Report not found or unauthorized" }
+        }
+
+        const proofUrls = report.proofUrls || []
+        if (proofUrls.length > 0) {
+            try {
+                const deletePromises = proofUrls.map(proof =>
+                    deleteFromCloudinary(proof.publicId, proof.type)
+                )
+                await Promise.all(deletePromises)
+            } catch (cloudinaryError) {
+                console.error("Failed to delete proof files from Cloudinary:", cloudinaryError)
+            }
+        }
+
+        const result = await collection.deleteOne({ postId, "student.userId": session.user.userId })
+
+        return {
+            success: result.acknowledged && result.deletedCount > 0,
+            message: result.acknowledged && result.deletedCount > 0
+                ? "Report deleted successfully"
+                : "Failed to delete report",
+        }
+    } catch (error) {
+        console.error("Error in deleteReport:", error)
+        return { success: false, message: "Something went wrong while deleting the report" }
     }
 }

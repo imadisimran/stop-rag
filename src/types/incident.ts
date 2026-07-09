@@ -13,4 +13,4 @@ export interface Incident {
   location: string;
 }
 
-export type FilterType = "All" | "Recent" | "Damage" | "Urgent";
+export type FilterType = "All" | "Recent"

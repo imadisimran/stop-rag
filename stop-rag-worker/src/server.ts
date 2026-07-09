@@ -15,7 +15,7 @@ const __dirname = path.dirname(__filename);
 // ==========================================
 // 1. TYPE INTERFACES
 // ==========================================
-import { JobData, ProofUrl, AiVerdict } from './types.js';
+import { JobData, ProofUrl, AiVerdict, UpdatedAt } from './types.js';
 
 // Helper to determine mimeType based on extension and resource type
 function getMimeType(extension: string, resourceType: string): string {
@@ -89,7 +89,8 @@ async function processNextJob(): Promise<void> {
             }
         );
         if (!report) {
-            throw new Error(`Report not found in database for ID: ${reportId}`);
+            console.log(`[Queue Engine] Report ${reportId} not found in database (possibly deleted by user). Skipping.`);
+            return;
         }
 
         const description: string = report.description;
@@ -106,10 +107,8 @@ async function processNextJob(): Promise<void> {
                     updatedAt: {
                         timestamp: new Date(),
                         status: "PROCESSING",
-                        verifiedBy: "Ai",
-                        adminId: null,
                         note: "AI verification queue processing started."
-                    }
+                    } as UpdatedAt
                 } as any
             }
         );
@@ -278,7 +277,6 @@ Incident Narrative:
                         timestamp: new Date(),
                         status: finalStatus,
                         verifiedBy: "Ai",
-                        adminId: null,
                         note: aiVerdict.isRaggingIncident ? "Passed automated validation checkpoint." : aiVerdict.rejectionReason
                     }
                 } as any
@@ -286,9 +284,28 @@ Incident Narrative:
         );
         console.log(`[Engine] Successfully updated Database record for Report ID: ${reportId}`);
 
-    } catch (error) {
+    } catch (error: any) {
         console.error(`[Engine Critical Error] Processing breakdown on Report ID ${reportId}:`, error);
-        // Optional: Update DB status to failed or enqueued back to allow human retry
+        try {
+            const db = mongoClient.db(process.env.MONGODB_DB);
+            const reportCollection = db.collection('incidents');
+            await reportCollection.updateOne(
+                { _id: new ObjectId(reportId) },
+                {
+                    $set: { status: "FAILED" },
+                    $push: {
+                        updatedAt: {
+                            timestamp: new Date(),
+                            status: "FAILED",
+                            note: `AI verification failed: ${error.message || error}`
+                        } as UpdatedAt
+                    } as any
+                }
+            );
+            console.log(`[Engine] Database status set to FAILED for Report ID: ${reportId}`);
+        } catch (dbError) {
+            console.error(`[Engine Failure Cleanup] Failed to set status to FAILED for Report ID ${reportId}:`, dbError);
+        }
     } finally {
         // STEP 7: CLEANUP LOCAL FILES & GEMINI UPLOADS
         console.log(`[Engine Cleaning] Running local disk recovery...`);
@@ -329,11 +346,9 @@ app.post('/api/v1/reports/verify', async (req: Request<{}, {}, { reportId: strin
                 $push: {
                     updatedAt: {
                         timestamp: new Date(),
-                        status: "QUEUED",
-                        verifiedBy: "Ai",
-                        adminId: null,
+                        status: 'QUEUED',
                         note: "Report queued for AI verification."
-                    }
+                    } as UpdatedAt
                 } as any
             }
         );
