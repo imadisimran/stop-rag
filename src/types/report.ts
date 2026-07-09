@@ -79,6 +79,7 @@ export interface UserReportCardData {
   description: string;
   status: ReportStatus;
   severity: ReportSeverity;
+  isAppealed?: boolean;
 }
 
 export interface ReportFilters {

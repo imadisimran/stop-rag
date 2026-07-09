@@ -21,7 +21,7 @@ export const submitAppeal = async (
 
     try {
         const collection = await dbConnect<Report>("incidents")
-        const report = await collection.findOne({ postId, "student.userId": session.user.userId }, { projection: { adminVerification: 1 } })
+        const report = await collection.findOne({ postId, "student.userId": session.user.userId }, { projection: { adminVerification: 1,status:1 } })
 
         if (!report) {
             return { success: false, message: "Report not found or unauthorized" }

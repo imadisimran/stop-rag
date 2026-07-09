@@ -153,6 +153,7 @@ export const getUserReports = async (filters: ReportFilters = {}): Promise<Serve
             sanitizedDescription: 1,
             status: 1,
             detectedSeverity: 1,
+            adminVerification: 1,
             _id: 0
         }).sort({ createdAt: sortDir }).skip(skipCount).limit(limit + 1).toArray()
 
@@ -167,6 +168,7 @@ export const getUserReports = async (filters: ReportFilters = {}): Promise<Serve
             createdAt: report.createdAt || new Date(),
             postId: report.postId || "error404",
             severity: report.detectedSeverity || "LOW",
+            isAppealed: report.adminVerification?.isAppealed || false,
         } as UserReportCardData))
 
         return { success: true, message: "Reports fetched successfully", data: { reports: mappedReports, hasMore } }
